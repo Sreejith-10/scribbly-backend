@@ -14,6 +14,9 @@ export class Auth extends AbstractDocument {
 
   @Prop({ required: true })
   password: string;
+
+  @Prop()
+  hashRt: string;
 }
 
 export const AuthSchema = SchemaFactory.createForClass(Auth);

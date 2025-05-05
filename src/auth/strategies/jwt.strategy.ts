@@ -3,31 +3,25 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
+import { AuthRepository } from '../auth.repository';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(readonly configService: ConfigService) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  constructor(
+    readonly configService: ConfigService,
+    private readonly authRepository: AuthRepository,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: Request) => request.cookies?.Authentication,
+        (request: Request) => request.cookies?.accessToken,
       ]),
-      secretOrKey: configService.getOrThrow('JWT_ACCESS_TOKEN_SECRET'),
+      secretOrKey: configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
     });
   }
 
-  async validate() {
-    // return this.prismaService.user.findFirst({
-    //   where: { uid: payload.uid },
-    //   select: {
-    //     uid: true,
-    //     fname: true,
-    //     lname: true,
-    //     email: true,
-    //     avatarUrl: true,
-    //     hashRt: true,
-    //     createdAt: true,
-    //     updatedAt: true,
-    //   },
-    // });
+  async validate(payload: { email: string }) {
+    const user = await this.authRepository.findOne({ email: payload.email });
+    delete user.password;
+    return user;
   }
 }

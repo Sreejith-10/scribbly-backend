@@ -4,12 +4,17 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto';
+import { LoginDto, RegisterDto } from './dto';
 import { Response } from 'express';
+import { JwtAuthGuard } from './guards';
+import { CurrentUser } from './decorators';
+import { Auth } from './auth.schema';
 
 @Controller('auth')
 export class AuthController {
@@ -22,14 +27,26 @@ export class AuthController {
     return res.json({ message: 'user created successfully', data: { user } });
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login() {
-    return this.authService.login();
+  async login(@Body() dto: LoginDto, @Res() res: Response) {
+    const { accessToken, refreshToken } = await this.authService.login(dto);
+    res.cookie('accessToken', accessToken, { httpOnly: true });
+    res.cookie('refreshToken', refreshToken, { httpOnly: true });
+    return res.json({ message: 'logged in successfully' });
   }
 
-  @Get('logut')
-  async logout() {
-    return this.authService.logout();
+  @HttpCode(HttpStatus.OK)
+  @Patch('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(
+    @CurrentUser() user: Omit<Auth, 'password' | 'hashRt'>,
+    @Res() res: Response,
+  ) {
+    await this.authService.logout(user.email);
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    return res.json({ message: 'user logged out' });
   }
 
   @Get('refresh')
