@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AbstractRepository } from 'src/database';
-import { Auth } from './auth.schema';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
+import { Auth } from './auth.schema';
 
 @Injectable()
 export class AuthRepository extends AbstractRepository<Auth> {

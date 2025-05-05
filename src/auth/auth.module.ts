@@ -3,11 +3,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { AuthRepository } from './auth.repository';
 import { DatabaseModule } from 'src/database';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Auth, AuthSchema } from './auth.schema';
-import { JwtRefreshStrategy, JwtStrategy, LocalStrategy } from './strategies';
+import { Auth, AuthSchema } from '../database/auth';
+import { AuthRepository } from 'src/database/auth';
+import {
+  JwtStrategy,
+  LocalStrategy,
+  JwtRefreshStrategy,
+} from 'src/strategies/auth';
 
 @Module({
   imports: [
@@ -27,10 +31,10 @@ import { JwtRefreshStrategy, JwtStrategy, LocalStrategy } from './strategies';
   controllers: [AuthController],
   providers: [
     AuthService,
-    AuthRepository,
     JwtStrategy,
     LocalStrategy,
     JwtRefreshStrategy,
+    AuthRepository,
   ],
 })
 export class AuthModule {}

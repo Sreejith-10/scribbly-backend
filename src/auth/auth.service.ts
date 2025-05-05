@@ -5,12 +5,12 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthRepository } from './auth.repository';
+import { AuthRepository } from '../database/auth';
 import { LoginDto, RegisterDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
-import { Auth } from './auth.schema';
+import { Auth } from '../database/auth';
 
 @Injectable()
 export class AuthService {

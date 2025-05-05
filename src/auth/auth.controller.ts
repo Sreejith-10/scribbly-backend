@@ -12,9 +12,9 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto';
 import { Response } from 'express';
-import { JwtAuthGuard } from './guards';
-import { CurrentUser } from './decorators';
-import { Auth } from './auth.schema';
+import { JwtAuthGuard } from '../guards/auth';
+import { CurrentUser } from '../decorators';
+import { Auth } from '../database/auth';
 
 @Controller('auth')
 export class AuthController {
