@@ -5,23 +5,22 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthRepository } from '../database/auth';
 import { LoginDto, RegisterDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
-import { Auth } from '../database/auth';
+import { User, UserRepository } from 'src/database/user';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly authRespository: AuthRepository,
+    private readonly userRepository: UserRepository,
     private readonly configService: ConfigService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<Auth> {
+  async register(dto: RegisterDto): Promise<User> {
     // checking if the user with email already exist
-    const userExist = await this.authRespository.findOne({ email: dto.email });
+    const userExist = await this.userRepository.findOne({ email: dto.email });
     if (userExist) {
       throw new ConflictException('user with email already exist');
     }
@@ -30,7 +29,7 @@ export class AuthService {
     const hashedPass = await bcrypt.hash(dto.password, 12);
 
     // create new user
-    const user = await this.authRespository.create({
+    const user = await this.userRepository.create({
       ...dto,
       password: hashedPass,
       hashRt: null,
@@ -46,7 +45,7 @@ export class AuthService {
     refreshToken: string;
   }> {
     // Checking if the user exist
-    const user = await this.authRespository.findOne({ email: dto.email });
+    const user = await this.userRepository.findOne({ email: dto.email });
     if (!user) {
       throw new NotFoundException('user with email does not exist');
     }
@@ -77,7 +76,7 @@ export class AuthService {
       this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
     );
 
-    await this.authRespository.findOneAndUpdate(
+    await this.userRepository.findOneAndUpdate(
       { email: dto.email },
       { hashRt: await bcrypt.hash(refreshToken, 12) },
     ); // stores refreshtoken in database
@@ -86,14 +85,14 @@ export class AuthService {
   }
 
   async logout(email: string) {
-    return this.authRespository.findOneAndUpdate({ email }, { hashRt: null });
+    return this.userRepository.findOneAndUpdate({ email }, { hashRt: null });
   }
 
   async refresh() {}
 
   async verifyUser(email: string, password: string) {
     // Checking if the user exist
-    const user = await this.authRespository.findOne({ email });
+    const user = await this.userRepository.findOne({ email });
     if (!user) {
       throw new NotFoundException('user with email does not exist');
     }
@@ -112,7 +111,7 @@ export class AuthService {
 
   async verifyRefreshToken(refreshToken: string, email: string) {
     // Checking if the user exist
-    const user = await this.authRespository.findOne({ email });
+    const user = await this.userRepository.findOne({ email });
     if (!user) {
       throw new NotFoundException('user with email does not exist');
     }

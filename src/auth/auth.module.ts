@@ -5,13 +5,12 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { DatabaseModule } from 'src/database';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Auth, AuthSchema } from '../database/auth';
-import { AuthRepository } from 'src/database/auth';
 import {
   JwtStrategy,
   LocalStrategy,
   JwtRefreshStrategy,
-} from 'src/strategies/auth';
+} from 'src/common/strategies/auth';
+import { User, UserRepository, UserSchema } from 'src/database/user';
 
 @Module({
   imports: [
@@ -26,7 +25,7 @@ import {
       }),
       inject: [ConfigService],
     }),
-    MongooseModule.forFeature([{ name: Auth.name, schema: AuthSchema }]),
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],
   providers: [
@@ -34,7 +33,7 @@ import {
     JwtStrategy,
     LocalStrategy,
     JwtRefreshStrategy,
-    AuthRepository,
+    UserRepository,
   ],
 })
 export class AuthModule {}

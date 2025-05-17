@@ -6,6 +6,7 @@ import {
   UpdateQuery,
   SaveOptions,
   Connection,
+  PipelineStage,
 } from 'mongoose';
 import { AbstractDocument } from './abstract.schema';
 
@@ -81,5 +82,9 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     const session = await this.connection.startSession();
     session.startTransaction();
     return session;
+  }
+
+  async aggregate(pipeline: PipelineStage[]): Promise<TDocument[]> {
+    return this.model.aggregate(pipeline).exec();
   }
 }

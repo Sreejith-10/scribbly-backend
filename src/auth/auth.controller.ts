@@ -12,9 +12,9 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto';
 import { Response } from 'express';
-import { JwtAuthGuard } from '../guards/auth';
-import { CurrentUser } from '../decorators';
-import { Auth } from '../database/auth';
+import { JwtAuthGuard } from '../common/guards/auth';
+import { CurrentUser } from '../common/decorators';
+import { User } from 'src/database/user';
 
 @Controller('auth')
 export class AuthController {
@@ -40,7 +40,7 @@ export class AuthController {
   @Patch('logout')
   @UseGuards(JwtAuthGuard)
   async logout(
-    @CurrentUser() user: Omit<Auth, 'password' | 'hashRt'>,
+    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
     @Res() res: Response,
   ) {
     await this.authService.logout(user.email);
