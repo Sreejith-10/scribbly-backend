@@ -26,30 +26,8 @@ export class Board extends AbstractDocument {
     | 'collaborative_with_requset'
     | 'collaborative_public_link';
 
-  @Prop({ type: [Types.ObjectId], ref: 'User', default: [] })
+  @Prop({ type: Types.ObjectId, ref: 'User' })
   collaborators: Types.ObjectId[];
-
-  @Prop({
-    type: [
-      {
-        user: { type: Types.ObjectId, ref: 'User' },
-        status: {
-          type: String,
-          enum: ['pending', 'accepted', 'rejected'],
-          default: 'pending',
-        },
-        requestedAt: { type: Date, default: Date.now() },
-      },
-    ],
-  })
-  collaborationRequests: {
-    user: Types.ObjectId;
-    status: 'pending' | 'accepted' | 'rejected';
-    requestedAt: Date;
-  }[];
-
-  @Prop()
-  publicShareLink: string;
 }
 
 export const BoardSchema = SchemaFactory.createForClass(Board);

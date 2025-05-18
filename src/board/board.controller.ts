@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  Patch,
   Post,
   Res,
   UseGuards,
@@ -37,33 +36,5 @@ export class BoardController {
   ) {
     const board = await this.boardService.createBoard(user._id, title);
     return res.json({ message: 'board created successfully', data: { board } });
-  }
-
-  @HttpCode(HttpStatus.OK)
-  @Get(':boardId/collab-requests')
-  async getCollaborationRequests(
-    @Param() { boardId }: { boardId: string },
-    @Res() res: Response,
-  ) {
-    const requests = await this.boardService.getCollaborationRequests(boardId);
-    return res.json({ data: { requests } });
-  }
-
-  @HttpCode(HttpStatus.OK)
-  @Patch('request/:link')
-  async requestCollaboration(
-    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
-    @Param() { link }: { link: string },
-    @Res() res: Response,
-  ) {
-    const request = await this.boardService.requestCollaboration(
-      user._id,
-      link,
-    );
-
-    return res.json({
-      message: 'collaboration request send',
-      data: { request },
-    });
   }
 }

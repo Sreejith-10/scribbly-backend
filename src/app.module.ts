@@ -5,6 +5,8 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database';
 import { AuthModule } from './auth';
 import { BoardModule } from './board';
+import { CollaborationRequestModule } from './collaboration-request';
+import { CollaboratorModule } from './collaborator';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { BoardModule } from './board';
     DatabaseModule,
     AuthModule,
     BoardModule,
+    CollaborationRequestModule,
+    CollaboratorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
