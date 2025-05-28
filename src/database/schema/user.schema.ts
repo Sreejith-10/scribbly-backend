@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AbstractDocument } from 'src/database';
+import { Document } from 'mongoose';
 
-@Schema({ versionKey: false })
-export class User extends AbstractDocument {
+@Schema({ versionKey: '__v', timestamps: true })
+export class User extends Document {
   @Prop({ required: true })
   firstName: string;
 

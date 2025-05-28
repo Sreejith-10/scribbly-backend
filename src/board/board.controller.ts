@@ -12,12 +12,12 @@ import {
 import { BoardService } from './board.service';
 import { JwtAuthGuard } from 'src/common/guards/auth';
 import { CurrentUser } from 'src/common/decorators';
-import { User } from 'src/database/user';
 import { Response } from 'express';
 import { CreateBoardDto } from './dto';
+import { User } from 'src/database/schema';
 
 @UseGuards(JwtAuthGuard)
-@Controller('board')
+@Controller('boards')
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
@@ -34,7 +34,10 @@ export class BoardController {
     @Body() { title }: CreateBoardDto,
     @Res() res: Response,
   ) {
-    const board = await this.boardService.createBoard(user._id, title);
+    const board = await this.boardService.createBoard(
+      user._id as string,
+      title,
+    );
     return res.json({ message: 'board created successfully', data: { board } });
   }
 }

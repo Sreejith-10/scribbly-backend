@@ -1,15 +1,25 @@
-import { Types } from 'mongoose';
-import { Board } from 'src/database/board';
-import { BoardRepository } from './../database/board';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Model, Types } from 'mongoose';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Board, Collaborator, CollaborationRequest } from 'src/database/schema';
 
 @Injectable()
 export class BoardService {
-  constructor(private readonly boardRepository: BoardRepository) {}
+  constructor(
+    @InjectModel(Board.name) private readonly boardModel: Model<Board>,
+    @InjectModel(Collaborator.name)
+    private readonly collaboratorModel: Model<Collaborator>,
+    @InjectModel(CollaborationRequest.name)
+    private readonly collaborationRequestModel: Model<CollaborationRequest>,
+  ) {}
 
   async findBoard(id: string): Promise<Board> {
     // Querying board from database with id
-    const board = await this.boardRepository.findOne({
+    const board = await this.boardModel.findOne({
       _id: id,
     });
 
@@ -18,16 +28,27 @@ export class BoardService {
       throw new NotFoundException('board does not exist');
     }
 
-    return board; // return the board
+    return board as Board; // return the board
   }
 
-  async createBoard(uId: Types.ObjectId, title: string): Promise<Board> {
+  async createBoard(uId: string, title: string): Promise<Board> {
     // create a new board
-    return await this.boardRepository.create({
-      ownerId: uId,
+    return await this.boardModel.create({
+      ownerId: new Types.ObjectId(uId),
       title,
       shapes: [],
       accessMode: 'private',
+      collaborators: [],
     });
+  }
+
+  async deleteBoard(boardId: string) {
+    try {
+      await this.collaboratorModel.deleteMany({ boardId });
+      await this.collaborationRequestModel.deleteMany({ boardId });
+      await this.boardModel.deleteMany({ _id: boardId });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
   }
 }

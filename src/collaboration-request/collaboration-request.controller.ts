@@ -7,12 +7,15 @@ import {
   Patch,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators';
-import { User } from 'src/database/user';
 import { CollaborationRequestService } from './collaboration-request.service';
 import { Response } from 'express';
+import { JwtAuthGuard } from 'src/common/guards/auth';
+import { User } from 'src/database/schema';
 
+@UseGuards(JwtAuthGuard)
 @Controller('collaboration-requests')
 export class CollaborationRequestController {
   constructor(
@@ -39,7 +42,7 @@ export class CollaborationRequestController {
     @Res() res: Response,
   ) {
     const request = await this.collaborationRequestService.requestCollaboration(
-      user._id,
+      user._id as string,
       boardId,
     );
 

@@ -1,39 +1,38 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Types } from 'mongoose';
-import { BoardRepository } from 'src/database/board';
-import {
-  CollaborationRequestRepository,
-  CollaborationRequest,
-} from 'src/database/collaboration-request';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Board, CollaborationRequest, Collaborator } from 'src/database/schema';
 
 @Injectable()
 export class CollaborationRequestService {
   constructor(
-    private readonly collaborationRequestRespository: CollaborationRequestRepository,
-    private readonly boardRepository: BoardRepository,
+    @InjectModel(CollaborationRequest.name)
+    private readonly collaborationRequestModel: Model<CollaborationRequest>,
+    @InjectModel(Board.name) private readonly boardModel: Model<Board>,
+    @InjectModel(Collaborator.name)
+    private readonly collaboratorModel: Model<Collaborator>,
   ) {}
 
   async getCollaborationRequests(
     boardId: string,
   ): Promise<CollaborationRequest[]> {
     // Query request document from database
-    const requests = await this.collaborationRequestRespository.find({
-      boardId,
+    const requests = await this.collaborationRequestModel.find({
+      boardId: new Types.ObjectId(boardId),
+      status: 'pending',
     });
 
     return requests; // return the results
   }
 
-  async requestCollaboration(
-    userId: Types.ObjectId,
-    boardId: string,
-  ): Promise<any> {
+  async requestCollaboration(userId: string, boardId: string): Promise<any> {
     // Find the board from database
-    const board = await this.boardRepository.findOne({ _id: boardId });
+    const board = await this.boardModel.findOne({ _id: boardId });
 
     // Checking if the board exist or not
     if (!board) {
@@ -41,18 +40,19 @@ export class CollaborationRequestService {
     }
 
     // Checking if the user already requested
-    const alreadyRequested = await this.collaborationRequestRespository.findOne(
-      { boardId: board._id, userId },
-    );
+    const alreadyRequested = await this.collaborationRequestModel.findOne({
+      boardId: board._id,
+      userId: new Types.ObjectId(userId),
+    });
 
     // Checking if the user already requested for collaboration
     if (alreadyRequested) {
       throw new ConflictException('already requested');
     }
     // Creating a new request for collaboration
-    const newRequest = await this.collaborationRequestRespository.create({
+    const newRequest = await this.collaborationRequestModel.create({
       boardId: new Types.ObjectId(boardId),
-      userId,
+      userId: new Types.ObjectId(userId),
     });
 
     return newRequest;
@@ -63,9 +63,9 @@ export class CollaborationRequestService {
     requestedUserId: string,
   ): Promise<CollaborationRequest> {
     // Finding the request from database
-    const request = await this.collaborationRequestRespository.findOne({
-      boardId,
-      userId: requestedUserId,
+    const request = await this.collaborationRequestModel.findOne({
+      boardId: new Types.ObjectId(boardId),
+      userId: new Types.ObjectId(requestedUserId),
     });
 
     // Checking if the board exist
@@ -73,17 +73,36 @@ export class CollaborationRequestService {
       throw new NotFoundException('request does not exist');
     }
 
+    if (request.status === 'accepted') {
+      throw new BadRequestException('request already accepted');
+    }
+
+    if (request.status === 'rejected') {
+      throw new BadRequestException('request is rejected');
+    }
     // Updating the request status
     const acceptedRequest =
-      await this.collaborationRequestRespository.findOneAndUpdate(
+      await this.collaborationRequestModel.findOneAndUpdate(
         {
-          boardId,
-          userId: requestedUserId,
+          boardId: new Types.ObjectId(boardId),
+          userId: new Types.ObjectId(requestedUserId),
         },
         {
           $set: { status: 'accepted' },
         },
       );
+
+    // add the user to collaborator collection
+    await this.collaboratorModel.create({
+      boardId: new Types.ObjectId(boardId),
+      userId: new Types.ObjectId(requestedUserId),
+    });
+
+    // update the user in board collection
+    await this.boardModel.findOneAndUpdate(
+      { _id: boardId },
+      { $push: { collaborators: new Types.ObjectId(requestedUserId) } },
+    );
 
     return acceptedRequest;
   }
@@ -93,7 +112,7 @@ export class CollaborationRequestService {
     requestedUserId: string,
   ): Promise<CollaborationRequest> {
     // Finding the request from database
-    const request = await this.collaborationRequestRespository.findOne({
+    const request = await this.collaborationRequestModel.findOne({
       boardId,
       userId: requestedUserId,
     });
@@ -105,7 +124,7 @@ export class CollaborationRequestService {
 
     // Updating the request status
     const acceptedRequest =
-      await this.collaborationRequestRespository.findOneAndUpdate(
+      await this.collaborationRequestModel.findOneAndUpdate(
         {
           boardId,
           userId: requestedUserId,

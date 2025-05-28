@@ -10,7 +10,7 @@ import {
   LocalStrategy,
   JwtRefreshStrategy,
 } from 'src/common/strategies/auth';
-import { User, UserRepository, UserSchema } from 'src/database/user';
+import { User, UserSchema } from 'src/database/schema';
 
 @Module({
   imports: [
@@ -28,12 +28,6 @@ import { User, UserRepository, UserSchema } from 'src/database/user';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    LocalStrategy,
-    JwtRefreshStrategy,
-    UserRepository,
-  ],
+  providers: [AuthService, JwtStrategy, LocalStrategy, JwtRefreshStrategy],
 })
 export class AuthModule {}

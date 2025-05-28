@@ -1,9 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AbstractDocument } from '../abstract.schema';
-import { Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 @Schema({ versionKey: '__v', timestamps: true })
-export class Board extends AbstractDocument {
+export class Board extends Document {
   @Prop({ required: true, ref: 'User' })
   ownerId: Types.ObjectId;
 
@@ -26,7 +25,7 @@ export class Board extends AbstractDocument {
     | 'collaborative_with_requset'
     | 'collaborative_public_link';
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'User', default: [] })
   collaborators: Types.ObjectId[];
 }
 
