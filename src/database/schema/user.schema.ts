@@ -3,19 +3,22 @@ import { Document } from 'mongoose';
 
 @Schema({ versionKey: '__v', timestamps: true })
 export class User extends Document {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   firstName: string;
 
-  @Prop({ required: false })
+  @Prop({ type: String, required: true })
   lastName: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ type: String, required: true, unique: true })
   email: string;
 
-  @Prop({ required: true })
+  @Prop({ default: String })
+  avatarUrl?: string;
+
+  @Prop({ type: String, required: true })
   password: string;
 
-  @Prop()
+  @Prop({ type: String })
   hashRt: string;
 }
 

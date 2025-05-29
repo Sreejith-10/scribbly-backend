@@ -7,6 +7,7 @@ import { AuthModule } from './auth';
 import { BoardModule } from './board';
 import { CollaborationRequestModule } from './collaboration-request';
 import { CollaboratorModule } from './collaborator';
+import { UserModule } from './user';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CollaboratorModule } from './collaborator';
     BoardModule,
     CollaborationRequestModule,
     CollaboratorModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,6 +9,10 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());
   app.use(cookieParser());
-  await app.listen(3000);
+  app.enableCors({
+    origin: process.env.CLIENT || 'http://localhost:3000',
+    credentials: true,
+  });
+  await app.listen(process.env.PORT);
 }
 bootstrap();

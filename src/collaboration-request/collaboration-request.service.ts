@@ -113,8 +113,8 @@ export class CollaborationRequestService {
   ): Promise<CollaborationRequest> {
     // Finding the request from database
     const request = await this.collaborationRequestModel.findOne({
-      boardId,
-      userId: requestedUserId,
+      boardId: new Types.ObjectId(boardId),
+      userId: new Types.ObjectId(requestedUserId),
     });
 
     // Checking if the board exist
@@ -126,8 +126,8 @@ export class CollaborationRequestService {
     const acceptedRequest =
       await this.collaborationRequestModel.findOneAndUpdate(
         {
-          boardId,
-          userId: requestedUserId,
+          boardId: new Types.ObjectId(boardId),
+          userId: new Types.ObjectId(requestedUserId),
         },
         {
           $set: { status: 'rejected' },

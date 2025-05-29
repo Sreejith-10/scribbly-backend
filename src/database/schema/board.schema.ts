@@ -13,17 +13,10 @@ export class Board extends Document {
   shapes: [];
 
   @Prop({
-    enum: [
-      'private',
-      'collaborative_with_requset',
-      'collaborative_public_link',
-    ],
+    enum: ['private', 'request_access', 'public'],
     default: 'private',
   })
-  accessMode:
-    | 'private'
-    | 'collaborative_with_requset'
-    | 'collaborative_public_link';
+  accessMode: 'private' | 'request_access' | 'public';
 
   @Prop({ type: Types.ObjectId, ref: 'User', default: [] })
   collaborators: Types.ObjectId[];
