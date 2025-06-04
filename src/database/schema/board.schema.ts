@@ -9,8 +9,11 @@ export class Board extends Document {
   @Prop({ required: true })
   title: string;
 
-  @Prop()
-  shapes: [];
+  @Prop({ default: null })
+  description?: string;
+
+  @Prop({ default: [] })
+  shapes: Record<PropertyKey, any>[];
 
   @Prop({
     enum: ['private', 'request_access', 'public'],
@@ -18,7 +21,7 @@ export class Board extends Document {
   })
   accessMode: 'private' | 'request_access' | 'public';
 
-  @Prop({ type: Types.ObjectId, ref: 'User', default: [] })
+  @Prop({ ref: 'User', default: [] })
   collaborators: Types.ObjectId[];
 }
 

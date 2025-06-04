@@ -26,11 +26,7 @@ export class UserService {
     return user as User;
   }
 
-  async updateUserName(
-    userId: string,
-    firstName: string,
-    lastName: string,
-  ): Promise<User> {
+  async updateUserName(userId: string, username: string): Promise<User> {
     // Check if the user exist or not in database
     const user = await this.userModel.findOne({ _id: userId });
     if (!user) {
@@ -42,8 +38,7 @@ export class UserService {
         _id: userId,
       },
       {
-        firstName,
-        lastName,
+        username,
       },
     );
 

@@ -31,14 +31,10 @@ export class UserController {
   @Patch('/u/:userId')
   async updateUserName(
     @Param() { userId }: { userId: string },
-    @Body() { firstName, lastName }: { firstName: string; lastName: string },
+    @Body() { username }: { username: string },
     @Res() res: Response,
   ) {
-    const user = await this.userService.updateUserName(
-      userId,
-      firstName,
-      lastName,
-    );
+    const user = await this.userService.updateUserName(userId, username);
     return res.json({ data: { user }, message: 'username updated' });
   }
 }

@@ -21,6 +21,17 @@ import { User } from 'src/database/schema';
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
+  @HttpCode(HttpStatus.OK)
+  @Get()
+  async getBoards(
+    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
+    @Res() res: Response,
+  ) {
+    const boards = await this.boardService.getBoards(user._id as string);
+    return res.json({ data: { boards } });
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Get(':id')
   async findBoard(@Param() { id }: { id: string }, @Res() res: Response) {
     const board = await this.boardService.findBoard(id);
@@ -31,13 +42,14 @@ export class BoardController {
   @Post('create')
   async createBoard(
     @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
-    @Body() { title }: CreateBoardDto,
+    @Body() { title, description, accessMode }: CreateBoardDto,
     @Res() res: Response,
   ) {
-    const board = await this.boardService.createBoard(
-      user._id as string,
+    const board = await this.boardService.createBoard(user._id as string, {
       title,
-    );
+      description,
+      accessMode,
+    });
     return res.json({ message: 'board created successfully', data: { board } });
   }
 }

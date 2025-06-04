@@ -63,7 +63,7 @@ export class AuthService {
       {
         uid: user._id,
         email: user.email,
-        name: user.firstName + ' ' + user.lastName,
+        name: user.username,
       },
       this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
       this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
@@ -72,7 +72,7 @@ export class AuthService {
       {
         uid: user._id,
         email: user.email,
-        name: user.firstName + ' ' + user.lastName,
+        name: user.username,
       },
       this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
       this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
