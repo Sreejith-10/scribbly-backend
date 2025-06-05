@@ -4,6 +4,8 @@ import { BoardController } from './board.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   Board,
+  BoardMetadata,
+  BoardMetadataSchema,
   BoardSchema,
   CollaborationRequest,
   CollaborationRequestSchema,
@@ -17,6 +19,7 @@ import {
       { name: Board.name, schema: BoardSchema },
       { name: CollaborationRequest.name, schema: CollaborationRequestSchema },
       { name: Collaborator.name, schema: CollaboratorSchema },
+      { name: BoardMetadata.name, schema: BoardMetadataSchema },
     ]),
   ],
   controllers: [BoardController],

@@ -1,12 +1,12 @@
 import { Model, Types } from 'mongoose';
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, UseInterceptors } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Board, Collaborator, CollaborationRequest } from 'src/database/schema';
+import {
+  Board,
+  Collaborator,
+  CollaborationRequest,
+  BoardMetadata,
+} from 'src/database/schema';
 import { CatchErrorsInterceptor } from 'src/common/interceptor';
 import { CreateBoardDto } from './dto';
 
@@ -19,6 +19,8 @@ export class BoardService {
     private readonly collaboratorModel: Model<Collaborator>,
     @InjectModel(CollaborationRequest.name)
     private readonly collaborationRequestModel: Model<CollaborationRequest>,
+    @InjectModel(BoardMetadata.name)
+    private readonly boardMetadataModel: Model<BoardMetadata>,
   ) {}
 
   async getBoards(userId: string): Promise<Board[]> {
@@ -65,22 +67,41 @@ export class BoardService {
 
   async createBoard(userId: string, fields: CreateBoardDto): Promise<Board> {
     // create a new board
-    return await this.boardModel.create({
+    const board = await this.boardModel.create({
       ownerId: new Types.ObjectId(userId),
       ...fields,
       shapes: [],
-      accessMode: 'private',
       collaborators: [],
     });
+
+    await this.boardMetadataModel.create({
+      ownerId: new Types.ObjectId(userId),
+      boardId: board._id,
+      title: fields.title,
+      accessMode: fields.accessMode,
+      description: fields.description ?? null,
+    });
+
+    return board;
   }
 
   async deleteBoard(boardId: string) {
-    try {
-      await this.collaboratorModel.deleteMany({ boardId });
-      await this.collaborationRequestModel.deleteMany({ boardId });
-      await this.boardModel.deleteMany({ _id: boardId });
-    } catch (error) {
-      throw new InternalServerErrorException(error);
+    await this.collaboratorModel.deleteMany({ boardId });
+    await this.collaborationRequestModel.deleteMany({ boardId });
+    await this.boardModel.deleteMany({ _id: boardId });
+  }
+
+  async getBoardsMetadata(userId: string) {
+    // Get board metadata
+    const boardMetadatas = await this.boardMetadataModel.find({
+      ownerId: new Types.ObjectId(userId),
+    });
+
+    // Chekcing if empty
+    if (!boardMetadatas.length) {
+      throw new NotFoundException('no boards found');
     }
+
+    return boardMetadatas;
   }
 }

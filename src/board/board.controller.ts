@@ -52,4 +52,17 @@ export class BoardController {
     });
     return res.json({ message: 'board created successfully', data: { board } });
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('metadata')
+  async getBoardsMetadata(
+    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
+    @Res() res: Response,
+  ) {
+    const boardMetadatas = await this.boardService.getBoardsMetadata(
+      user._id as string,
+    );
+
+    return res.json({ data: { boardMetadatas } });
+  }
 }
