@@ -31,7 +31,7 @@ export class CollaborationRequestController {
     const requests =
       await this.collaborationRequestService.getCollaborationRequests(boardId);
 
-    return res.json({ data: { requests } });
+    return res.json({ requests });
   }
 
   @HttpCode(HttpStatus.CREATED)
@@ -48,7 +48,7 @@ export class CollaborationRequestController {
 
     return res.json({
       message: 'collaboration request send',
-      data: { request },
+      request,
     });
   }
 
@@ -67,7 +67,7 @@ export class CollaborationRequestController {
 
     return res.json({
       message: 'collaboration request accepted',
-      data: { request },
+      request,
     });
   }
 
@@ -86,7 +86,7 @@ export class CollaborationRequestController {
 
     return res.json({
       message: 'collaboration request rejected',
-      data: { request },
+      request,
     });
   }
 }

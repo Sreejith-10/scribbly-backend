@@ -24,7 +24,7 @@ export class AuthController {
   @Post('register')
   async register(@Body() dto: RegisterDto, @Res() res: Response) {
     const user = await this.authService.register(dto);
-    return res.json({ message: 'user created successfully', data: { user } });
+    return res.json({ message: 'user created successfully', user });
   }
 
   @HttpCode(HttpStatus.OK)

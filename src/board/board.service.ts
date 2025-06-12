@@ -53,8 +53,8 @@ export class BoardService {
 
   async findBoard(id: string): Promise<Board> {
     // Querying board from database with id
-    const board = await this.boardModel.findOne({
-      _id: id,
+    const board = await this.boardModel.findById({
+      _id: new Types.ObjectId(id),
     });
 
     // Checking if the board exist or not
@@ -96,6 +96,8 @@ export class BoardService {
     const boardMetadatas = await this.boardMetadataModel.find({
       ownerId: new Types.ObjectId(userId),
     });
+
+    console.log(boardMetadatas);
 
     // Chekcing if empty
     if (!boardMetadatas.length) {

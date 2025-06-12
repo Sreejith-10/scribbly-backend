@@ -22,20 +22,33 @@ export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
   @HttpCode(HttpStatus.OK)
-  @Get()
+  @Get('/')
   async getBoards(
     @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
     @Res() res: Response,
   ) {
     const boards = await this.boardService.getBoards(user._id as string);
-    return res.json({ data: { boards } });
+    return res.json({ boards });
   }
 
   @HttpCode(HttpStatus.OK)
-  @Get(':id')
+  @Get('/metadata')
+  async getBoardsMetadata(
+    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
+    @Res() res: Response,
+  ) {
+    const boardMetadatas = await this.boardService.getBoardsMetadata(
+      user._id as string,
+    );
+
+    return res.json({ boardMetadatas });
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('/board/:id')
   async findBoard(@Param() { id }: { id: string }, @Res() res: Response) {
     const board = await this.boardService.findBoard(id);
-    return res.json({ data: { board } });
+    return res.json({ board });
   }
 
   @HttpCode(HttpStatus.CREATED)
@@ -50,19 +63,6 @@ export class BoardController {
       description,
       accessMode,
     });
-    return res.json({ message: 'board created successfully', data: { board } });
-  }
-
-  @HttpCode(HttpStatus.OK)
-  @Get('metadata')
-  async getBoardsMetadata(
-    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
-    @Res() res: Response,
-  ) {
-    const boardMetadatas = await this.boardService.getBoardsMetadata(
-      user._id as string,
-    );
-
-    return res.json({ data: { boardMetadatas } });
+    return res.json({ message: 'board created successfully', board });
   }
 }
