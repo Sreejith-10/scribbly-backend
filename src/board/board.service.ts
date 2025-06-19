@@ -6,6 +6,7 @@ import {
   Collaborator,
   CollaborationRequest,
   BoardMetadata,
+  DelataHistory,
 } from 'src/database/schema';
 import { CatchErrorsInterceptor } from 'src/common/interceptor';
 import { CreateBoardDto } from './dto';
@@ -21,6 +22,8 @@ export class BoardService {
     private readonly collaborationRequestModel: Model<CollaborationRequest>,
     @InjectModel(BoardMetadata.name)
     private readonly boardMetadataModel: Model<BoardMetadata>,
+    @InjectModel(DelataHistory.name)
+    private readonly deltaHistoryModel: Model<DelataHistory>,
   ) {}
 
   async getBoards(userId: string): Promise<Board[]> {
@@ -70,8 +73,9 @@ export class BoardService {
     const board = await this.boardModel.create({
       ownerId: new Types.ObjectId(userId),
       ...fields,
-      shapes: [],
-      collaborators: [],
+      snapshot: { shapes: {}, version: 0 },
+      deltas: [],
+      sequence: 0,
     });
 
     await this.boardMetadataModel.create({
@@ -97,13 +101,129 @@ export class BoardService {
       ownerId: new Types.ObjectId(userId),
     });
 
-    console.log(boardMetadatas);
-
     // Chekcing if empty
     if (!boardMetadatas.length) {
       throw new NotFoundException('no boards found');
     }
 
     return boardMetadatas;
+  }
+
+  async addDelta(
+    boardId: string,
+    delta: {
+      operation: 'create' | 'update' | 'delete';
+      shapeId: string;
+      data?: any;
+    },
+    userId: string,
+  ) {
+    const board = await this.boardModel.findByIdAndUpdate(
+      boardId,
+      {
+        $push: {
+          deltas: {
+            ...delta,
+            author: new Types.ObjectId(userId),
+            sequence: await this.getNextSequence(boardId),
+            timestamp: new Date(),
+          },
+        },
+        $inc: { sequence: 1 },
+      },
+      {
+        new: true,
+      },
+    );
+
+    await this.deltaHistoryModel.create({
+      boardId: new Types.ObjectId(boardId),
+      delta,
+      author: new Types.ObjectId(userId),
+    });
+
+    return board;
+  }
+
+  private async getNextSequence(boardId: string) {
+    const board = await this.boardModel.findById(boardId);
+    if (!board) {
+      throw new NotFoundException('Board does not exist');
+    }
+
+    return board.sequence + 1;
+  }
+
+  async createSnapshot(boardId: string) {
+    const board = await this.boardModel.findById(boardId);
+    if (!board) {
+      throw new NotFoundException('Board does not exist');
+    }
+
+    const currentState = await this.computeCurrentState(board);
+
+    return this.boardModel.findOneAndUpdate(
+      { _id: boardId },
+      {
+        snapshot: {
+          shapes: currentState,
+          version: board.sequence,
+        },
+        deltas: [],
+      },
+      { new: true },
+    );
+  }
+
+  private async computeCurrentState(board: Board) {
+    const state = JSON.parse(JSON.stringify(board.snapshot.shapes || {}));
+
+    board.deltas
+      .sort((a, b) => a.sequence - b.sequence)
+      .forEach((delta) => {
+        switch (delta.operation) {
+          case 'create':
+            state[delta.shapeId] = {
+              ...delta.data,
+              shapeId: delta.shapeId,
+            };
+            break;
+          case 'update':
+            if (state[delta.shapeId]) {
+              state[delta.shapeId] = {
+                ...state[delta.shapeId],
+                ...delta.data,
+              };
+            }
+            break;
+          case 'delete':
+            delete state[delta.shapeId];
+            break;
+        }
+      });
+
+    return state;
+  }
+
+  async getBoardState(boardId: string) {
+    const board = await this.boardModel.findById(boardId);
+    if (!board) {
+      throw new NotFoundException('Board does not exist');
+    }
+
+    return {
+      snapshot: board.snapshot,
+      deltas: board.deltas,
+      currentState: await this.computeCurrentState(board),
+    };
+  }
+
+  async getLastUserDelta(boardId: string, userId: string) {
+    const board = await this.boardModel.findOne({
+      _id: boardId,
+      'deltas.author': new Types.ObjectId(userId),
+    });
+
+    return board?.deltas?.slice(-1)[0];
   }
 }

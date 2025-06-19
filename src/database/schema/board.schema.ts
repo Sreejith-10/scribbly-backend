@@ -12,8 +12,11 @@ export class Board extends Document {
   @Prop({ default: null })
   description?: string;
 
-  @Prop({ default: [] })
-  shapes: Record<PropertyKey, any>[];
+  @Prop({ type: Object, default: { shapes: {}, version: 0 } })
+  snapshot: {
+    shapes: Record<PropertyKey, any>;
+    version: 0;
+  };
 
   @Prop({
     enum: ['private', 'request_access', 'public'],
@@ -23,6 +26,19 @@ export class Board extends Document {
 
   @Prop({ ref: 'User', default: [] })
   collaborators: Types.ObjectId[];
+
+  @Prop({ type: [Object], default: [] })
+  deltas: Array<{
+    operation: 'create' | 'update' | 'delete';
+    shapeId: string;
+    data?: any;
+    timestamp: Date;
+    author: Types.ObjectId;
+    sequence: number;
+  }>;
+
+  @Prop({ type: Number, default: 0 })
+  sequence: number;
 }
 
 export const BoardSchema = SchemaFactory.createForClass(Board);

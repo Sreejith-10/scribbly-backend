@@ -11,6 +11,8 @@ import {
   CollaborationRequestSchema,
   Collaborator,
   CollaboratorSchema,
+  DelataHistory,
+  DelataHistorySchema,
 } from 'src/database/schema';
 
 @Module({
@@ -20,6 +22,7 @@ import {
       { name: CollaborationRequest.name, schema: CollaborationRequestSchema },
       { name: Collaborator.name, schema: CollaboratorSchema },
       { name: BoardMetadata.name, schema: BoardMetadataSchema },
+      { name: DelataHistory.name, schema: DelataHistorySchema },
     ]),
   ],
   controllers: [BoardController],
