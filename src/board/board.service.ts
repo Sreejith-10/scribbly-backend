@@ -142,7 +142,7 @@ export class BoardService {
       author: new Types.ObjectId(userId),
     });
 
-    return board;
+    return this.computeCurrentState(board);
   }
 
   private async getNextSequence(boardId: string) {

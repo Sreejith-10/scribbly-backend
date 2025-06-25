@@ -122,7 +122,7 @@ export class BoardController {
   }
 
   // 3. Undo/Redo Endpoints
-  @Post(':id/undo')
+  @Patch(':id/undo')
   async undoLastAction(
     @Param('id') boardId: string,
     @CurrentUser() user: CurrentUserType,
@@ -143,7 +143,7 @@ export class BoardController {
     return this.boardService.getBoardState(boardId);
   }
 
-  @Post(':id/snapshot')
+  @Patch(':id/snapshot')
   async createSnapshot(@Param('id') boardId: string) {
     return this.boardService.createSnapshot(boardId);
   }
