@@ -6,25 +6,23 @@ import {
   HttpStatus,
   Param,
   Patch,
-  Res,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { Response } from 'express';
 import { CurrentUser } from 'src/common/decorators';
 import { User } from 'src/database/schema';
+import { JwtAuthGuard } from 'src/common/guards/auth';
 
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @HttpCode(HttpStatus.OK)
-  @Get('/u/:userId')
-  async getUser(
-    @CurrentUser() u: Omit<User, 'hashRt' | 'password'>,
-    @Res() res: Response,
-  ) {
+  @Get('/u')
+  async getUser(@CurrentUser() u: Omit<User, 'hashRt' | 'password'>) {
     const user = await this.userService.getUser(u._id as string, u.email);
-    return res.json({ data: { user }, message: 'success' });
+    return { user, message: 'success' };
   }
 
   @HttpCode(HttpStatus.OK)
@@ -32,9 +30,8 @@ export class UserController {
   async updateUserName(
     @Param() { userId }: { userId: string },
     @Body() { username }: { username: string },
-    @Res() res: Response,
   ) {
     const user = await this.userService.updateUserName(userId, username);
-    return res.json({ data: { user }, message: 'username updated' });
+    return { user, message: 'username updated' };
   }
 }

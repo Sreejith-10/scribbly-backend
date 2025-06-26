@@ -15,7 +15,7 @@ export class UserService {
     // Query for user from database
     const user = await this.userModel.findOne(
       { _id: userId, email },
-      { _id: true, email: true, firstName: true, lastName: true },
+      { _id: true, email: true, username: true, avatarUrl: true },
     );
 
     // Check if the user exist
@@ -44,8 +44,4 @@ export class UserService {
 
     return updatedUser as User;
   }
-
-  async updateAvatart() {}
-
-  async deletAccount() {}
 }

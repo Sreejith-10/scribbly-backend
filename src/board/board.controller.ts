@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
@@ -31,12 +32,23 @@ export class BoardController {
 
   @HttpCode(HttpStatus.OK)
   @Get('/metadata')
-  async getBoardsMetadata(@CurrentUser() user: CurrentUserType) {
+  async getBoardsMetadata(
+    @CurrentUser() user: CurrentUserType,
+    @Query('query') query: string,
+  ) {
     const boardMetadatas = await this.boardService.getBoardsMetadata(
       user._id as string,
+      query,
     );
 
     return { boardMetadatas };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('/metadata/:id')
+  async getBoardMetadataById(@Param('id') id: string) {
+    const boardMetadata = await this.boardService.getBoardMetadataById(id);
+    return { boardMetadata };
   }
 
   @HttpCode(HttpStatus.OK)

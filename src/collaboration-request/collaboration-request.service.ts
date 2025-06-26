@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Board, CollaborationRequest, Collaborator } from 'src/database/schema';
+import {
+  Board,
+  BoardMetadata,
+  CollaborationRequest,
+  Collaborator,
+} from 'src/database/schema';
 
 @Injectable()
 export class CollaborationRequestService {
@@ -16,6 +21,8 @@ export class CollaborationRequestService {
     @InjectModel(Board.name) private readonly boardModel: Model<Board>,
     @InjectModel(Collaborator.name)
     private readonly collaboratorModel: Model<Collaborator>,
+    @InjectModel(BoardMetadata.name)
+    private readonly boardMetadataModel: Model<BoardMetadata>,
   ) {}
 
   async getCollaborationRequests(
@@ -54,6 +61,16 @@ export class CollaborationRequestService {
       boardId: new Types.ObjectId(boardId),
       userId: new Types.ObjectId(userId),
     });
+    await this.boardMetadataModel.findOneAndUpdate(
+      {
+        boardId: new Types.ObjectId(boardId),
+      },
+      {
+        $push: {
+          collaborators: userId,
+        },
+      },
+    );
 
     return newRequest;
   }

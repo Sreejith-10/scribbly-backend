@@ -54,18 +54,53 @@ export class BoardService {
     return boards;
   }
 
-  async findBoard(id: string): Promise<Board> {
+  async findBoard(id: string): Promise<any> {
     // Querying board from database with id
-    const board = await this.boardModel.findById({
-      _id: new Types.ObjectId(id),
-    });
+    const board = await this.boardModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      {
+        $unwind: {
+          path: '$owner',
+        },
+      },
+      {
+        $project: {
+          owner: { password: 0, hashRt: 0 },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'collaborators',
+          foreignField: '_id',
+          as: 'collaborators',
+        },
+      },
+      {
+        $project: {
+          collaborators: { password: 0, hashRt: 0 },
+        },
+      },
+    ]);
 
     // Checking if the board exist or not
     if (!board) {
       throw new NotFoundException('board does not exist');
     }
 
-    return board as Board; // return the board
+    return board[0]; // return the board
   }
 
   async createBoard(userId: string, fields: CreateBoardDto): Promise<Board> {
@@ -95,11 +130,36 @@ export class BoardService {
     await this.boardModel.deleteMany({ _id: boardId });
   }
 
-  async getBoardsMetadata(userId: string) {
+  async getBoardsMetadata(userId: string, query: string) {
     // Get board metadata
-    const boardMetadatas = await this.boardMetadataModel.find({
-      ownerId: new Types.ObjectId(userId),
-    });
+    const boardMetadatas = await this.boardMetadataModel.aggregate([
+      {
+        $match: {
+          ownerId: new Types.ObjectId(userId),
+        },
+      },
+      {
+        $match: query === 'all' ? {} : { accessMode: query },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      {
+        $unwind: {
+          path: '$owner',
+        },
+      },
+      {
+        $project: {
+          owner: { password: 0, hashRt: 0 },
+        },
+      },
+    ]);
 
     // Chekcing if empty
     if (!boardMetadatas.length) {
@@ -225,5 +285,57 @@ export class BoardService {
     });
 
     return board?.deltas?.slice(-1)[0];
+  }
+
+  async getBoardMetadataById(boardId: string) {
+    // Get board metadata
+    const boardMetadata = await this.boardMetadataModel.aggregate([
+      {
+        $match: {
+          boardId: new Types.ObjectId(boardId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      {
+        $unwind: {
+          path: '$owner',
+        },
+      },
+      {
+        $project: {
+          owner: { password: 0, hashRt: 0 },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'collaborators',
+          foreignField: '_id',
+          as: 'collaborators',
+        },
+      },
+      {
+        $project: {
+          collaborators: { password: 0, hashRt: 0 },
+        },
+      },
+      {
+        $limit: 1,
+      },
+    ]);
+
+    // Chekcing if empty
+    if (!boardMetadata[0]) {
+      throw new NotFoundException('no boards found');
+    }
+
+    return boardMetadata[0];
   }
 }
