@@ -30,10 +30,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() dto: LoginDto, @Res() res: Response) {
-    const { accessToken, refreshToken } = await this.authService.login(dto);
+    const { accessToken, refreshToken, user } =
+      await this.authService.login(dto);
     res.cookie('accessToken', accessToken, { httpOnly: true });
     res.cookie('refreshToken', refreshToken, { httpOnly: true });
-    return res.json({ message: 'logged in successfully' });
+    return res.json({ message: 'logged in successfully', user });
   }
 
   @HttpCode(HttpStatus.OK)
@@ -46,7 +47,7 @@ export class AuthController {
     await this.authService.logout(user.email);
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
-    return res.json({ message: 'user logged out' });
+    return { message: 'user logged out' };
   }
 
   @Get('refresh')

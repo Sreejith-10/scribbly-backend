@@ -38,6 +38,7 @@ export class AuthService {
     });
 
     delete user.password; // delete the password from user object
+    delete user.hashRt;
 
     return user; // return created user
   }
@@ -45,6 +46,7 @@ export class AuthService {
   async login(dto: LoginDto): Promise<{
     accessToken: string;
     refreshToken: string;
+    user: User;
   }> {
     // Checking if the user exist
     const user = await this.userModel.findOne({ email: dto.email });
@@ -83,7 +85,10 @@ export class AuthService {
       { hashRt: await bcrypt.hash(refreshToken, 12) },
     ); // stores refreshtoken in database
 
-    return { accessToken, refreshToken }; // returns the generated tokens
+    delete user.password; // delete the password from user object
+    delete user.hashRt;
+
+    return { accessToken, refreshToken, user }; // returns the generated tokens
   }
 
   async logout(email: string) {
