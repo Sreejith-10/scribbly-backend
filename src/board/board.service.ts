@@ -24,7 +24,7 @@ export class BoardService {
     private readonly boardMetadataModel: Model<BoardMetadata>,
     @InjectModel(DelataHistory.name)
     private readonly deltaHistoryModel: Model<DelataHistory>,
-  ) {}
+  ) { }
 
   async getBoards(userId: string): Promise<Board[]> {
     const boards = await this.boardModel.aggregate([
@@ -135,7 +135,10 @@ export class BoardService {
     const boardMetadatas = await this.boardMetadataModel.aggregate([
       {
         $match: {
-          ownerId: new Types.ObjectId(userId),
+          $or: [
+            { ownerId: new Types.ObjectId(userId) },
+            { collaborators: new Types.ObjectId(userId) },
+          ],
         },
       },
       {
