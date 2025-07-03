@@ -8,6 +8,7 @@ import { BoardModule } from './board';
 import { CollaborationRequestModule } from './collaboration-request';
 import { CollaboratorModule } from './collaborator';
 import { UserModule } from './user';
+import { WebsocketModule } from './websocket';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UserModule } from './user';
     CollaborationRequestModule,
     CollaboratorModule,
     UserModule,
+    WebsocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

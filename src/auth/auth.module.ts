@@ -11,6 +11,7 @@ import {
   JwtRefreshStrategy,
 } from 'src/common/strategies/auth';
 import { User, UserSchema } from 'src/database/schema';
+import { UserModule } from 'src/user';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { User, UserSchema } from 'src/database/schema';
       inject: [ConfigService],
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    UserModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LocalStrategy, JwtRefreshStrategy],

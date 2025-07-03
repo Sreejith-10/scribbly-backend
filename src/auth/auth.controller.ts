@@ -6,12 +6,13 @@ import {
   HttpStatus,
   Patch,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { JwtAuthGuard } from '../common/guards/auth';
 import { CurrentUser } from '../common/decorators';
 import { User } from 'src/database/schema';
@@ -53,5 +54,18 @@ export class AuthController {
   @Get('refresh')
   async refresh() {
     return this.authService.refresh();
+  }
+
+  // @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('tokens')
+  async tokens(@Req() req: Request) {
+    const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
+
+    const accessTokenHash = await this.authService.hashToken(accessToken);
+    const refreshTokenHash = await this.authService.hashToken(refreshToken);
+
+    return { accessTokenHash, refreshTokenHash };
   }
 }

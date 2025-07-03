@@ -9,20 +9,19 @@ import { LoginDto, RegisterDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { User } from 'src/database/schema';
-import { Model } from 'mongoose';
+import { UsersRepository } from 'src/user/user.respository';
+import { User } from 'src/user/schema';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
+    private readonly userRespository: UsersRepository,
     private readonly configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto): Promise<User> {
     // checking if the user with email already exist
-    const userExist = await this.userModel.findOne({ email: dto.email });
+    const userExist = await this.userRespository.exists({ email: dto.email });
     if (userExist) {
       throw new ConflictException('user with email already exist');
     }
@@ -31,7 +30,7 @@ export class AuthService {
     const hashedPass = await bcrypt.hash(dto.password, 12);
 
     // create new user
-    const user = await this.userModel.create({
+    const user = await this.userRespository.create({
       ...dto,
       password: hashedPass,
       hashRt: null,
@@ -49,8 +48,8 @@ export class AuthService {
     user: User;
   }> {
     // Checking if the user exist
-    const user = await this.userModel.findOne({ email: dto.email });
-    if (!user) {
+    const user = await this.userRespository.findOne({ email: dto.email });
+    if (user) {
       throw new NotFoundException('user with email does not exist');
     }
 
@@ -80,7 +79,7 @@ export class AuthService {
       this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
     );
 
-    await this.userModel.findOneAndUpdate(
+    await this.userRespository.findOneAndUpdate(
       { email: dto.email },
       { hashRt: await bcrypt.hash(refreshToken, 12) },
     ); // stores refreshtoken in database
@@ -92,14 +91,14 @@ export class AuthService {
   }
 
   async logout(email: string) {
-    return this.userModel.findOneAndUpdate({ email }, { hashRt: null });
+    return this.userRespository.findOneAndUpdate({ email }, { hashRt: null });
   }
 
   async refresh() {}
 
   async verifyUser(email: string, password: string) {
     // Checking if the user exist
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userRespository.findOne({ email });
     if (!user) {
       throw new NotFoundException('user with email does not exist');
     }
@@ -118,7 +117,7 @@ export class AuthService {
 
   async verifyRefreshToken(refreshToken: string, email: string) {
     // Checking if the user exist
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userRespository.findOne({ email });
     if (!user) {
       throw new NotFoundException('user with email does not exist');
     }
@@ -137,5 +136,9 @@ export class AuthService {
 
   private generateToken(payload: any, secret: string, expires: number) {
     return jwt.sign(payload, secret, { expiresIn: expires });
+  }
+
+  async hashToken(token: string): Promise<string> {
+    return bcrypt.hash(token, 12);
   }
 }
