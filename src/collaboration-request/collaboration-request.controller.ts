@@ -13,7 +13,7 @@ import { CurrentUser } from 'src/common/decorators';
 import { CollaborationRequestService } from './collaboration-request.service';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/common/guards/auth';
-import { User } from 'src/database/schema';
+import { User } from 'src/user/schema';
 
 @UseGuards(JwtAuthGuard)
 @Controller('collaboration-requests')
@@ -29,7 +29,9 @@ export class CollaborationRequestController {
     @Res() res: Response,
   ) {
     const requests =
-      await this.collaborationRequestService.getCollaborationRequests(boardId);
+      await this.collaborationRequestService.getCollaborationRequestsByBoardId(
+        boardId,
+      );
 
     return res.json({ requests });
   }
@@ -42,7 +44,7 @@ export class CollaborationRequestController {
     @Res() res: Response,
   ) {
     const request = await this.collaborationRequestService.requestCollaboration(
-      user._id as string,
+      user._id.toString(),
       boardId,
     );
 

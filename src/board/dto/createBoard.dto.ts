@@ -8,8 +8,8 @@ export class CreateBoardDto {
   @IsOptional()
   description: string;
 
-  @IsIn(['private', 'request_access', 'public'], {
+  @IsIn(['private', 'public'], {
     message: 'accessMode must be one of: private, request_access, or public',
   })
-  accessMode: 'private' | 'request_access' | 'public';
+  accessMode: 'private' | 'public';
 }

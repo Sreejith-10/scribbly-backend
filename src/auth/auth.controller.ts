@@ -15,7 +15,7 @@ import { LoginDto, RegisterDto } from './dto';
 import { Response, Request } from 'express';
 import { JwtAuthGuard } from '../common/guards/auth';
 import { CurrentUser } from '../common/decorators';
-import { User } from 'src/database/schema';
+import { User } from 'src/user/schema';
 
 @Controller('auth')
 export class AuthController {

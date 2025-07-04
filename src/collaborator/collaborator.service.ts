@@ -1,6 +1,65 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UseInterceptors } from '@nestjs/common';
+import { Collaborator } from './schema';
+import { CatchErrorsInterceptor } from 'src/common/interceptor';
+import { CollaboratorRespository } from './collaborator.respository';
 
+@UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class CollaboratorService {
-  constructor() {}
+  constructor(
+    private readonly collaboratorReposiotry: CollaboratorRespository,
+  ) {}
+
+  async getCollaborators(): Promise<Collaborator[]> {
+    return this.collaboratorReposiotry.find();
+  }
+
+  async getCollaboratorsByBoardId(boardId: string): Promise<Collaborator[]> {
+    const collaborators = await this.collaboratorReposiotry.find({ boardId });
+
+    if (!collaborators.length) {
+      throw new NotFoundException('collaborator does not exist');
+    }
+
+    return collaborators;
+  }
+
+  async getCollaboratorByUserId(
+    boardId: string,
+    userId: string,
+  ): Promise<Collaborator> {
+    const collaborator = await this.collaboratorReposiotry.findOne({
+      boardId,
+      userId,
+    });
+
+    if (!collaborator) {
+      throw new NotFoundException('collaborator does not exist');
+    }
+
+    return collaborator;
+  }
+
+  async addCollaborator(dto: Omit<Collaborator, '_id'>): Promise<Collaborator> {
+    return this.collaboratorReposiotry.create({ ...dto });
+  }
+
+  async updateCollaboratorRole(
+    boardId: string,
+    userId: string,
+    role: 'edit' | 'view',
+  ): Promise<Collaborator> {
+    return this.collaboratorReposiotry.findOneAndUpdate(
+      { boardId, userId },
+      { role },
+    );
+  }
+
+  async removeCollaborator(boardId: string, userId: string) {
+    return this.collaboratorReposiotry.deleteOne({ boardId, userId });
+  }
+
+  async removeAllCollaborator(boardId: string) {
+    return this.collaboratorReposiotry.deleteMany({ boardId });
+  }
 }

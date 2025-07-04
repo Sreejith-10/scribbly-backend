@@ -3,19 +3,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { DatabaseModule } from 'src/database';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   JwtStrategy,
   LocalStrategy,
   JwtRefreshStrategy,
 } from 'src/common/strategies/auth';
-import { User, UserSchema } from 'src/database/schema';
+import { User, UserSchema } from 'src/user/schema';
 import { UserModule } from 'src/user';
 
 @Module({
   imports: [
-    DatabaseModule,
     ConfigModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({

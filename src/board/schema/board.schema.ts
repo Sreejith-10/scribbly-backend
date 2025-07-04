@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
+import { AbstractDocument } from 'src/database';
 
-@Schema({ versionKey: '__v', timestamps: true })
-export class Board extends Document {
+@Schema({ versionKey: false, timestamps: true })
+export class Board extends AbstractDocument {
   @Prop({ required: true, ref: 'User' })
   ownerId: Types.ObjectId;
 
@@ -19,10 +20,10 @@ export class Board extends Document {
   };
 
   @Prop({
-    enum: ['private', 'request_access', 'public'],
+    enum: ['private', 'public'],
     default: 'private',
   })
-  accessMode: 'private' | 'request_access' | 'public';
+  accessMode: 'private' | 'public';
 
   @Prop({ ref: 'User', default: [] })
   collaborators: Types.ObjectId[];

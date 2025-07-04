@@ -9,6 +9,8 @@ import { CollaborationRequestModule } from './collaboration-request';
 import { CollaboratorModule } from './collaborator';
 import { UserModule } from './user';
 import { WebsocketModule } from './websocket';
+import { BoardMetadataModule } from './board-metadata';
+import { DeltaHistoryModule } from './delta-history';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { WebsocketModule } from './websocket';
     CollaboratorModule,
     UserModule,
     WebsocketModule,
+    BoardMetadataModule,
+    DeltaHistoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

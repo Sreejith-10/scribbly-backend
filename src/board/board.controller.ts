@@ -9,7 +9,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
@@ -26,45 +25,24 @@ export class BoardController {
   @HttpCode(HttpStatus.OK)
   @Get('/')
   async getBoards(@CurrentUser() user: CurrentUserType) {
-    const boards = await this.boardService.getBoards(user._id as string);
+    const boards = await this.boardService.getBoards(user._id.toString());
     return { boards };
   }
 
   @HttpCode(HttpStatus.OK)
-  @Get('/metadata')
-  async getBoardsMetadata(
-    @CurrentUser() user: CurrentUserType,
-    @Query('query') query: string,
-  ) {
-    const boardMetadatas = await this.boardService.getBoardsMetadata(
-      user._id as string,
-      query,
-    );
-
-    return { boardMetadatas };
-  }
-
-  @HttpCode(HttpStatus.OK)
-  @Get('/metadata/:id')
-  async getBoardMetadataById(@Param('id') id: string) {
-    const boardMetadata = await this.boardService.getBoardMetadataById(id);
-    return { boardMetadata };
-  }
-
-  @HttpCode(HttpStatus.OK)
-  @Get('/board/:id')
+  @Get(':id')
   async findBoard(@Param('id') id: string) {
     const board = await this.boardService.findBoard(id);
     return { board };
   }
 
   @HttpCode(HttpStatus.CREATED)
-  @Post('create')
+  @Post('')
   async createBoard(
     @CurrentUser() user: CurrentUserType,
     @Body() { title, description, accessMode }: CreateBoardDto,
   ) {
-    const board = await this.boardService.createBoard(user._id as string, {
+    const board = await this.boardService.createBoard(user._id.toString(), {
       title,
       description,
       accessMode,
@@ -86,7 +64,7 @@ export class BoardController {
         shapeId,
         data,
       },
-      user._id as string,
+      user._id.toString(),
     );
 
     return {
@@ -109,7 +87,7 @@ export class BoardController {
         shapeId,
         data,
       },
-      user._id as string,
+      user._id.toString(),
     );
 
     return { message: 'shape updated', delta };
@@ -127,7 +105,7 @@ export class BoardController {
         operation: 'delete',
         shapeId,
       },
-      user._id as string,
+      user._id.toString(),
     );
 
     return { message: 'shape removed', delta };
@@ -141,12 +119,16 @@ export class BoardController {
   ) {
     const lastDelta = await this.boardService.getLastUserDelta(
       boardId,
-      user.id as string,
+      user._id.toString(),
     );
     if (!lastDelta) throw new NotFoundException('No actions to undo');
 
     const inverseDelta = this.createInverseDelta(lastDelta);
-    return this.boardService.addDelta(boardId, inverseDelta, user.id as string);
+    return this.boardService.addDelta(
+      boardId,
+      inverseDelta,
+      user._id.toString(),
+    );
   }
 
   // 4. State Management

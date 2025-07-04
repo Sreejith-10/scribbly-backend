@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
+import { AbstractDocument } from 'src/database';
 
-@Schema({ timestamps: true })
-export class DelataHistory extends Document {
+@Schema({ versionKey: false, timestamps: true })
+export class DeltaHistory extends AbstractDocument {
   @Prop({ type: Types.ObjectId, ref: 'Board', required: true })
   boardId: Types.ObjectId;
 
@@ -13,4 +14,4 @@ export class DelataHistory extends Document {
   author: Types.ObjectId;
 }
 
-export const DelataHistorySchema = SchemaFactory.createForClass(DelataHistory);
+export const DeltaHistorySchema = SchemaFactory.createForClass(DeltaHistory);

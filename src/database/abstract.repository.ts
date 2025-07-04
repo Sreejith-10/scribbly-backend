@@ -1,4 +1,4 @@
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import {
   FilterQuery,
   Model,
@@ -8,6 +8,7 @@ import {
   Connection,
   ProjectionType,
   PipelineStage,
+  QueryOptions,
 } from 'mongoose';
 import { AbstractDocument } from './abstract.schema';
 
@@ -21,7 +22,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
   async create(
     document: Omit<TDocument, '_id'>,
-    options?: SaveOptions,
+    options: SaveOptions = {},
   ): Promise<TDocument> {
     const createdDocument = new this.model({
       ...document,
@@ -33,17 +34,25 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
   }
 
   async find(
-    filterQuery: FilterQuery<TDocument>,
-    projection?: ProjectionType<TDocument>,
+    filterQuery: FilterQuery<TDocument> = {},
+    projection: ProjectionType<TDocument> = {},
   ): Promise<TDocument[]> {
     return (await this.model
       .find(filterQuery, projection, { lean: true })
       .exec()) as TDocument[];
   }
 
+  async findById(
+    id: any,
+    projection: ProjectionType<TDocument> = {},
+    options: QueryOptions = {},
+  ) {
+    return this.model.findById(id, projection, options);
+  }
+
   async findOne(
-    filterQuery: FilterQuery<TDocument>,
-    projection?: ProjectionType<TDocument>,
+    filterQuery: FilterQuery<TDocument> = {},
+    projection: ProjectionType<TDocument> = {},
   ): Promise<TDocument> {
     const document = await this.model.findOne(filterQuery, projection, {
       lean: true,
@@ -51,31 +60,31 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
     if (!document) {
       this.logger.warn('Document not found with filterQuery', filterQuery);
-      throw new NotFoundException('Document not found.');
     }
 
     return document as TDocument;
   }
 
   async findOneAndUpdate(
-    filterQuery: FilterQuery<TDocument>,
+    filterQuery: FilterQuery<TDocument> = {},
     update: UpdateQuery<TDocument>,
+    options: QueryOptions = {},
   ) {
     const document = await this.model.findOneAndUpdate(filterQuery, update, {
       lean: true,
       new: true,
+      ...options,
     });
 
     if (!document) {
       this.logger.warn(`Document not found with filterQuery:`, filterQuery);
-      throw new NotFoundException('Document not found.');
     }
 
     return document as TDocument;
   }
 
   async upsert(
-    filterQuery: FilterQuery<TDocument>,
+    filterQuery: FilterQuery<TDocument> = {},
     document: Partial<TDocument>,
   ): Promise<TDocument | null> {
     return this.model.findOneAndUpdate(filterQuery, document, {
@@ -85,12 +94,12 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     }) as unknown as TDocument | null;
   }
 
-  async aggregate(pipeline?: PipelineStage[]): Promise<any[]> {
+  async aggregate(pipeline: PipelineStage[] = []): Promise<any[]> {
     return this.model.aggregate(pipeline);
   }
 
   async update(
-    filterQuery: FilterQuery<TDocument>,
+    filterQuery: FilterQuery<TDocument> = {},
     update: UpdateQuery<TDocument>,
   ): Promise<TDocument> {
     const document = await this.model.findOneAndUpdate(filterQuery, update, {
@@ -100,39 +109,38 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
 
     if (!document) {
       this.logger.warn(`Document not found with filterQuery:`, filterQuery);
-      throw new NotFoundException('Document not found.');
     }
 
     return document as TDocument;
   }
 
-  async deleteOne(filterQuery: FilterQuery<TDocument>): Promise<void> {
+  async deleteOne(filterQuery: FilterQuery<TDocument> = {}): Promise<void> {
     const result = await this.model.deleteOne(filterQuery).exec();
     if (result.deletedCount === 0) {
       this.logger.warn(
         `No document found to delete with filterQuery:`,
         filterQuery,
       );
-      throw new NotFoundException('Document not found.');
     }
   }
 
-  async deletMany(filterQuery: FilterQuery<TDocument>): Promise<void> {
+  async deleteMany(filterQuery: FilterQuery<TDocument> = {}): Promise<void> {
     const result = await this.model.deleteMany(filterQuery).exec();
     if (result.deletedCount === 0) {
       this.logger.warn(
         `No document found to delete with filterQuery:`,
         filterQuery,
       );
-      throw new NotFoundException('Document not found.');
     }
   }
 
-  async countDocuments(filterQuery: FilterQuery<TDocument>): Promise<number> {
+  async countDocuments(
+    filterQuery: FilterQuery<TDocument> = {},
+  ): Promise<number> {
     return this.model.countDocuments(filterQuery).exec();
   }
 
-  async exists(filterQuery: FilterQuery<TDocument>): Promise<boolean> {
+  async exists(filterQuery: FilterQuery<TDocument> = {}): Promise<boolean> {
     const document = await this.model.exists(filterQuery).lean();
     return !!document;
   }

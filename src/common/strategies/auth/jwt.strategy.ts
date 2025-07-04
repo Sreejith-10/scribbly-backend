@@ -3,15 +3,13 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { User } from 'src/database/schema';
-import { Model } from 'mongoose';
+import { UserService } from 'src/user';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     readonly configService: ConfigService,
-    @InjectModel(User.name) private readonly userModel: Model<User>,
+    private readonly userService: UserService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -22,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: { email: string }) {
-    const user = await this.userModel.findOne({ email: payload.email });
+    const user = await this.userService.getUser(payload.email);
     delete user.password;
     return user;
   }

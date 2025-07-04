@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
+import { AbstractDocument } from 'src/database';
 
-@Schema({ versionKey: '__v', timestamps: true })
-export class Collaborator extends Document {
+@Schema({ versionKey: false, timestamps: true })
+export class Collaborator extends AbstractDocument {
   @Prop({ type: Types.ObjectId, ref: 'Board' })
   boardId: Types.ObjectId;
 

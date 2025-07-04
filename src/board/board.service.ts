@@ -1,33 +1,34 @@
-import { Model, Types } from 'mongoose';
-import { Injectable, NotFoundException, UseInterceptors } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
 import {
-  Board,
-  Collaborator,
-  CollaborationRequest,
-  BoardMetadata,
-  DelataHistory,
-} from 'src/database/schema';
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UseInterceptors,
+} from '@nestjs/common';
 import { CatchErrorsInterceptor } from 'src/common/interceptor';
 import { CreateBoardDto } from './dto';
+import { BoardRepository } from './board.repository';
+import { BoardMetadataService } from 'src/board-metadata';
+import { Board } from './schema';
+import { CollaboratorService } from 'src/collaborator';
+import { DeltaHistoryService } from 'src/delta-history';
+import { CollaborationRequestService } from 'src/collaboration-request';
 
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class BoardService {
   constructor(
-    @InjectModel(Board.name) private readonly boardModel: Model<Board>,
-    @InjectModel(Collaborator.name)
-    private readonly collaboratorModel: Model<Collaborator>,
-    @InjectModel(CollaborationRequest.name)
-    private readonly collaborationRequestModel: Model<CollaborationRequest>,
-    @InjectModel(BoardMetadata.name)
-    private readonly boardMetadataModel: Model<BoardMetadata>,
-    @InjectModel(DelataHistory.name)
-    private readonly deltaHistoryModel: Model<DelataHistory>,
-  ) { }
+    private readonly boardRespository: BoardRepository,
+    private readonly boardMetadataService: BoardMetadataService,
+    private readonly collaboratorService: CollaboratorService,
+    private readonly deltaHistoryService: DeltaHistoryService,
+    @Inject(forwardRef(() => CollaborationRequestService))
+    private readonly collaborationRequestService: CollaborationRequestService,
+  ) {}
 
   async getBoards(userId: string): Promise<Board[]> {
-    const boards = await this.boardModel.aggregate([
+    const boards = await this.boardRespository.aggregate([
       {
         $match: {
           $or: [
@@ -56,7 +57,7 @@ export class BoardService {
 
   async findBoard(id: string): Promise<any> {
     // Querying board from database with id
-    const board = await this.boardModel.aggregate([
+    const board = await this.boardRespository.aggregate([
       {
         $match: {
           _id: new Types.ObjectId(id),
@@ -105,15 +106,16 @@ export class BoardService {
 
   async createBoard(userId: string, fields: CreateBoardDto): Promise<Board> {
     // create a new board
-    const board = await this.boardModel.create({
+    const board = await this.boardRespository.create({
       ownerId: new Types.ObjectId(userId),
       ...fields,
       snapshot: { shapes: {}, version: 0 },
       deltas: [],
+      collaborators: [],
       sequence: 0,
     });
 
-    await this.boardMetadataModel.create({
+    await this.boardMetadataService.createBoardMetadata({
       ownerId: new Types.ObjectId(userId),
       boardId: board._id,
       title: fields.title,
@@ -125,51 +127,9 @@ export class BoardService {
   }
 
   async deleteBoard(boardId: string) {
-    await this.collaboratorModel.deleteMany({ boardId });
-    await this.collaborationRequestModel.deleteMany({ boardId });
-    await this.boardModel.deleteMany({ _id: boardId });
-  }
-
-  async getBoardsMetadata(userId: string, query: string) {
-    // Get board metadata
-    const boardMetadatas = await this.boardMetadataModel.aggregate([
-      {
-        $match: {
-          $or: [
-            { ownerId: new Types.ObjectId(userId) },
-            { collaborators: new Types.ObjectId(userId) },
-          ],
-        },
-      },
-      {
-        $match: query === 'all' ? {} : { accessMode: query },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'ownerId',
-          foreignField: '_id',
-          as: 'owner',
-        },
-      },
-      {
-        $unwind: {
-          path: '$owner',
-        },
-      },
-      {
-        $project: {
-          owner: { password: 0, hashRt: 0 },
-        },
-      },
-    ]);
-
-    // Chekcing if empty
-    if (!boardMetadatas.length) {
-      throw new NotFoundException('no boards found');
-    }
-
-    return boardMetadatas;
+    await this.collaboratorService.removeAllCollaborator(boardId);
+    await this.collaborationRequestService.dropAllRequests(boardId);
+    await this.boardRespository.deleteMany({ _id: boardId });
   }
 
   async addDelta(
@@ -181,8 +141,10 @@ export class BoardService {
     },
     userId: string,
   ) {
-    const board = await this.boardModel.findByIdAndUpdate(
-      boardId,
+    const board = await this.boardRespository.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(boardId),
+      },
       {
         $push: {
           deltas: {
@@ -199,17 +161,13 @@ export class BoardService {
       },
     );
 
-    await this.deltaHistoryModel.create({
-      boardId: new Types.ObjectId(boardId),
-      delta,
-      author: new Types.ObjectId(userId),
-    });
+    await this.deltaHistoryService.createHistory(boardId, userId, delta);
 
     return this.computeCurrentState(board);
   }
 
   private async getNextSequence(boardId: string) {
-    const board = await this.boardModel.findById(boardId);
+    const board = await this.boardRespository.findById(boardId);
     if (!board) {
       throw new NotFoundException('Board does not exist');
     }
@@ -218,14 +176,14 @@ export class BoardService {
   }
 
   async createSnapshot(boardId: string) {
-    const board = await this.boardModel.findById(boardId);
+    const board = await this.boardRespository.findById(boardId);
     if (!board) {
       throw new NotFoundException('Board does not exist');
     }
 
     const currentState = await this.computeCurrentState(board);
 
-    return this.boardModel.findOneAndUpdate(
+    return this.boardRespository.findOneAndUpdate(
       { _id: boardId },
       {
         snapshot: {
@@ -269,7 +227,7 @@ export class BoardService {
   }
 
   async getBoardState(boardId: string) {
-    const board = await this.boardModel.findById(boardId);
+    const board = await this.boardRespository.findById(boardId);
     if (!board) {
       throw new NotFoundException('Board does not exist');
     }
@@ -282,7 +240,7 @@ export class BoardService {
   }
 
   async getLastUserDelta(boardId: string, userId: string) {
-    const board = await this.boardModel.findOne({
+    const board = await this.boardRespository.findOne({
       _id: boardId,
       'deltas.author': new Types.ObjectId(userId),
     });
@@ -290,55 +248,10 @@ export class BoardService {
     return board?.deltas?.slice(-1)[0];
   }
 
-  async getBoardMetadataById(boardId: string) {
-    // Get board metadata
-    const boardMetadata = await this.boardMetadataModel.aggregate([
-      {
-        $match: {
-          boardId: new Types.ObjectId(boardId),
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'ownerId',
-          foreignField: '_id',
-          as: 'owner',
-        },
-      },
-      {
-        $unwind: {
-          path: '$owner',
-        },
-      },
-      {
-        $project: {
-          owner: { password: 0, hashRt: 0 },
-        },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'collaborators',
-          foreignField: '_id',
-          as: 'collaborators',
-        },
-      },
-      {
-        $project: {
-          collaborators: { password: 0, hashRt: 0 },
-        },
-      },
-      {
-        $limit: 1,
-      },
-    ]);
-
-    // Chekcing if empty
-    if (!boardMetadata[0]) {
-      throw new NotFoundException('no boards found');
-    }
-
-    return boardMetadata[0];
+  async addCollaborator(boardId: string, userId: string) {
+    return this.boardRespository.findOneAndUpdate(
+      { _id: boardId },
+      { $push: { collaborators: new Types.ObjectId(userId) } },
+    );
   }
 }
