@@ -13,7 +13,7 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto';
 import { Response, Request } from 'express';
-import { JwtAuthGuard } from '../common/guards/auth';
+import { JwtAuthGuard, JwtRefreshAuthGuard } from '../common/guards/auth';
 import { CurrentUser } from '../common/decorators';
 import { User } from 'src/user/schema';
 
@@ -51,9 +51,21 @@ export class AuthController {
     return res.json({ message: 'user logged out' });
   }
 
+  @HttpCode(HttpStatus.OK)
   @Get('refresh')
-  async refresh() {
-    return this.authService.refresh();
+  @UseGuards(JwtRefreshAuthGuard)
+  async refresh(
+    @Req() req: Request,
+    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
+    @Res() res: Response,
+  ) {
+    const accessToken = await this.authService.refresh(
+      user.email,
+      req.cookies.refreshToken,
+    );
+
+    res.cookie('accessToken', accessToken, { httpOnly: true });
+    return res.json({ message: 'user refreshed', accessToken });
   }
 
   // @UseGuards(JwtAuthGuard)

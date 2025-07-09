@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -15,6 +17,8 @@ import { hash } from 'src/utils/helper';
 
 @Injectable()
 export class AuthService {
+  protected readonly logger = new Logger();
+
   constructor(
     private readonly userService: UserService,
     private readonly configService: ConfigService,
@@ -70,6 +74,7 @@ export class AuthService {
       this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
       this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
     );
+
     const refreshToken = this.generateToken(
       {
         uid: user._id,
@@ -77,6 +82,7 @@ export class AuthService {
         name: user.username,
       },
       this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+      // 10,
       this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
     );
 
@@ -93,7 +99,31 @@ export class AuthService {
     return this.userService.userHashToken(email, null);
   }
 
-  async refresh() {}
+  async refresh(email: string, Rt: string) {
+    const user = await this.userService.getUser(email);
+
+    if (!user) {
+      throw new ForbiddenException('access denied');
+    }
+
+    const valid = await bcrypt.compare(Rt, user.hashRt);
+
+    if (!valid) {
+      throw new UnauthorizedException('user not authorized');
+    }
+
+    const generateAT = this.generateToken(
+      {
+        uid: user._id,
+        email: user.email,
+        name: user.username,
+      },
+      this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
+      this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
+    );
+
+    return generateAT;
+  }
 
   async verifyUser(email: string, password: string) {
     // Checking if the user exist
@@ -106,25 +136,6 @@ export class AuthService {
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       throw new BadRequestException('password does not match');
-    }
-
-    delete user.password;
-    delete user.hashRt;
-
-    return user;
-  }
-
-  async verifyRefreshToken(refreshToken: string, email: string) {
-    // Checking if the user exist
-    const user = await this.userService.getUser(email);
-    if (!user) {
-      throw new NotFoundException('user with email does not exist');
-    }
-
-    const authenticated = await bcrypt.compare(refreshToken, user.hashRt);
-
-    if (!authenticated) {
-      throw new UnauthorizedException('user not authorized');
     }
 
     delete user.password;
