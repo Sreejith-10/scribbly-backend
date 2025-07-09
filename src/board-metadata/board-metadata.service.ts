@@ -111,6 +111,7 @@ export class BoardMetadataService {
       description: dto.description ?? null,
       collaborators: [],
       boardThumbnail: null,
+      boardCreatedAt: new Date(),
     });
   }
 
@@ -122,9 +123,6 @@ export class BoardMetadataService {
       { boardId },
       {
         ...dto,
-        $push: {
-          collaborators: dto.collaborators.length > 0 && dto.collaborators,
-        },
       },
     );
   }

@@ -121,6 +121,7 @@ export class BoardService {
       title: fields.title,
       accessMode: fields.accessMode,
       description: fields.description ?? null,
+      boardCreatedAt: new Date(),
     });
 
     return board;

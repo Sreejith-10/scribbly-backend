@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UseInterceptors } from '@nestjs/common';
 import { Collaborator } from './schema';
 import { CatchErrorsInterceptor } from 'src/common/interceptor';
 import { CollaboratorRespository } from './collaborator.respository';
+import { Types } from 'mongoose';
 
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
@@ -15,7 +16,31 @@ export class CollaboratorService {
   }
 
   async getCollaboratorsByBoardId(boardId: string): Promise<Collaborator[]> {
-    const collaborators = await this.collaboratorReposiotry.find({ boardId });
+    const collaborators = await this.collaboratorReposiotry.aggregate([
+      {
+        $match: {
+          boardId: new Types.ObjectId(boardId),
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+        },
+      },
+      {
+        $project: {
+          owner: { password: 0, hashRt: 0 },
+        },
+      },
+    ]);
 
     if (!collaborators.length) {
       throw new NotFoundException('collaborator does not exist');

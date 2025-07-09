@@ -9,7 +9,7 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { WebsocketService } from './websocket.service';
-import { UseGuards } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import { WebsocketAuthGuard } from 'src/common/guards/auth';
 
 @UseGuards(WebsocketAuthGuard)
@@ -26,18 +26,20 @@ export class WebsocketGateway
   @WebSocketServer()
   server: Server;
 
+  protected readonly logger = new Logger();
+
   constructor(private readonly websocketService: WebsocketService) {}
 
   handleConnection(client: Socket): void {
-    console.log(`Client connected: ${client.id}`);
+    this.logger.log(`Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket): void {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('join')
   joinRoom(@MessageBody() payload: { boardId: string }) {
-    console.log({ payload });
+    this.logger.log({ payload });
   }
 }

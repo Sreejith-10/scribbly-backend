@@ -5,6 +5,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CollborationRequestRepository } from './collaboration-reqest.repository';
@@ -12,7 +13,9 @@ import { CollaborationRequest } from './schema';
 import { BoardService } from 'src/board';
 import { BoardMetadataService } from 'src/board-metadata';
 import { CollaboratorService } from 'src/collaborator';
+import { CatchErrorsInterceptor } from 'src/common/interceptor';
 
+@UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class CollaborationRequestService {
   constructor(
@@ -23,19 +26,49 @@ export class CollaborationRequestService {
     private readonly collaboratorService: CollaboratorService,
   ) {}
 
-  async getCollaborationRequestsByBoardId(
-    boardId: string,
-  ): Promise<CollaborationRequest[]> {
+  async getCollaborationRequestsByBoardId(boardId: string): Promise<any[]> {
     // Query request document from database
-    const requests = await this.collaborationRequestRespository.find({
-      boardId: new Types.ObjectId(boardId),
-      status: 'pending',
-    });
+    const requests = await this.collaborationRequestRespository.aggregate([
+      {
+        $match: {
+          boardId: new Types.ObjectId(boardId),
+          status: 'pending',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+        },
+      },
+      {
+        $project: {
+          user: { password: 0, hashRt: 0 },
+        },
+      },
+    ]);
 
     return requests; // return the results
   }
 
-  async requestCollaboration(userId: string, boardId: string): Promise<any> {
+  async requestCollaboration(userId: string, link: string): Promise<any> {
+    const uri = process.env.CLIENT;
+
+    const urlRegex = new RegExp(`^${uri}\/board\/public\/[a-zA-Z0-9]+$`);
+
+    if (!urlRegex.test(link)) {
+      throw new BadRequestException('Provide a valid link');
+    }
+
+    const boardId = link.split('/').pop();
+
     // Find the board from database
     const board = await this.boardService.findBoard(boardId);
 
@@ -54,16 +87,14 @@ export class CollaborationRequestService {
 
     // Checking if the user already requested for collaboration
     if (alreadyRequested) {
-      throw new ConflictException('already requested');
+      throw new ConflictException('already requested please wait');
     }
     // Creating a new request for collaboration
     const newRequest = await this.collaborationRequestRespository.create({
       boardId: new Types.ObjectId(boardId),
       userId: new Types.ObjectId(userId),
     });
-    await this.boardMetadataService.updateBoardMetada(boardId, {
-      collaborators: [new Types.ObjectId(userId)],
-    });
+    await this.boardMetadataService.addCollaborator(boardId, userId);
 
     return newRequest;
   }

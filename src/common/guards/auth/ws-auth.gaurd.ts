@@ -9,7 +9,6 @@ export class WebsocketAuthGuard implements CanActivate {
   ): boolean | Promise<boolean> | Observable<boolean> {
     const client: Socket = context.switchToWs().getClient();
     const cookies = client.handshake.headers.cookie;
-    console.log(cookies);
     return true;
   }
 }

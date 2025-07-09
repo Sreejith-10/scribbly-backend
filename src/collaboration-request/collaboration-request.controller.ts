@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -37,15 +38,15 @@ export class CollaborationRequestController {
   }
 
   @HttpCode(HttpStatus.CREATED)
-  @Post(':boardId/request')
+  @Post('')
   async requestCollaboration(
     @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
-    @Param() { boardId }: { boardId: string },
+    @Body() { link }: { link: string },
     @Res() res: Response,
   ) {
     const request = await this.collaborationRequestService.requestCollaboration(
       user._id.toString(),
-      boardId,
+      link,
     );
 
     return res.json({
@@ -55,7 +56,7 @@ export class CollaborationRequestController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Patch(':boardId/:requestedUserId/accept')
+  @Patch('/:boardId/:requestedUserId/accept')
   async accecptCollaborationRequest(
     @Param()
     { boardId, requestedUserId }: { boardId: string; requestedUserId: string },

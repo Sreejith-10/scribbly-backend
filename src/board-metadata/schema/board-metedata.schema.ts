@@ -27,6 +27,15 @@ export class BoardMetadata extends AbstractDocument {
 
   @Prop({ ref: 'User', default: [] })
   collaborators: Types.ObjectId[];
+
+  @Prop({ ref: 'User', type: Types.ObjectId, default: null })
+  lastUpdatedBy?: Types.ObjectId;
+
+  @Prop({ type: Date })
+  boardCreatedAt: Date;
+
+  @Prop({ type: Date, default: null })
+  lastUpdatedAt?: Date;
 }
 
 export const BoardMetadataSchema = SchemaFactory.createForClass(BoardMetadata);

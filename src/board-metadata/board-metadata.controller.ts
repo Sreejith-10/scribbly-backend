@@ -18,7 +18,7 @@ export class BoardMetadataController {
   constructor(private readonly boardMetadataService: BoardMetadataService) {}
 
   @HttpCode(HttpStatus.OK)
-  @Get('/')
+  @Get('')
   async getBoardsMetadata(
     @CurrentUser() user: User,
     @Query('query') query: string,

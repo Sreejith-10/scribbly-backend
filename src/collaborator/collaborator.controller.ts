@@ -18,7 +18,10 @@ export class CollaboratorController {
   @HttpCode(HttpStatus.OK)
   @Get(':boardId')
   async getCollaboratorsByBoardId(@Param('boardId') boardId: string) {
-    return this.collaboratorService.getCollaboratorsByBoardId(boardId);
+    const collaborators =
+      await this.collaboratorService.getCollaboratorsByBoardId(boardId);
+
+    return { collaborators };
   }
 
   @HttpCode(HttpStatus.OK)
@@ -27,7 +30,9 @@ export class CollaboratorController {
     @Param('boardId') boardId: string,
     @Param('userId') userId: string,
   ) {
-    return this.collaboratorService.getCollaboratorByUserId(boardId, userId);
+    const collaborators =
+      await this.collaboratorService.getCollaboratorByUserId(boardId, userId);
+    return { collaborators };
   }
 
   @HttpCode(HttpStatus.CREATED)

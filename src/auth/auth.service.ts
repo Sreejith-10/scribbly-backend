@@ -54,8 +54,6 @@ export class AuthService {
       throw new NotFoundException('user with email does not exist');
     }
 
-    console.log(user);
-
     // comparing passwords
     const passwordMatch = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatch) {

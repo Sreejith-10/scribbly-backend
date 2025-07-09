@@ -13,6 +13,9 @@ export class Collaborator extends AbstractDocument {
   @Prop({ type: String, enum: ['view', 'edit'], default: 'view' })
   role?: 'view' | 'edit';
 
+  @Prop({ type: String, enum: ['active', 'inactive'], default: 'inactive' })
+  status?: 'active' | 'inactive';
+
   @Prop({ type: Date })
   lastSeen?: Date;
 }

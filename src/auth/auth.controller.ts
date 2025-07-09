@@ -48,7 +48,7 @@ export class AuthController {
     await this.authService.logout(user.email);
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
-    return { message: 'user logged out' };
+    return res.json({ message: 'user logged out' });
   }
 
   @Get('refresh')
