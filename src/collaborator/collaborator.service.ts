@@ -54,8 +54,8 @@ export class CollaboratorService {
     userId: string,
   ): Promise<Collaborator> {
     const collaborator = await this.collaboratorReposiotry.findOne({
-      boardId,
-      userId,
+      boardId: new Types.ObjectId(boardId),
+      userId: new Types.ObjectId(userId),
     });
 
     if (!collaborator) {
@@ -75,16 +75,40 @@ export class CollaboratorService {
     role: 'edit' | 'view',
   ): Promise<Collaborator> {
     return this.collaboratorReposiotry.findOneAndUpdate(
-      { boardId, userId },
+      {
+        boardId: new Types.ObjectId(boardId),
+        userId: new Types.ObjectId(userId),
+      },
       { role },
     );
   }
 
   async removeCollaborator(boardId: string, userId: string) {
-    return this.collaboratorReposiotry.deleteOne({ boardId, userId });
+    return this.collaboratorReposiotry.deleteOne({
+      boardId: new Types.ObjectId(boardId),
+      userId: new Types.ObjectId(userId),
+    });
   }
 
   async removeAllCollaborator(boardId: string) {
-    return this.collaboratorReposiotry.deleteMany({ boardId });
+    return this.collaboratorReposiotry.deleteMany({
+      boardId: new Types.ObjectId(boardId),
+    });
+  }
+
+  async updateCollaboratorStatus(
+    boardId: string,
+    userId: string,
+    status: string,
+  ) {
+    this.collaboratorReposiotry.findOneAndUpdate(
+      {
+        boardId: new Types.ObjectId(boardId),
+        userId: new Types.ObjectId(userId),
+      },
+      {
+        status,
+      },
+    );
   }
 }

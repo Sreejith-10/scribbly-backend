@@ -1,20 +1,20 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Patch,
   Post,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorators';
 import { CollaborationRequestService } from './collaboration-request.service';
-import { Response } from 'express';
 import { JwtAuthGuard } from 'src/common/guards/auth';
 import { User } from 'src/user/schema';
+import { CurrentUserType } from 'src/utils/types';
 
 @UseGuards(JwtAuthGuard)
 @Controller('collaboration-requests')
@@ -25,42 +25,60 @@ export class CollaborationRequestController {
 
   @HttpCode(HttpStatus.OK)
   @Get(':boardId')
-  async getCollaborationRequests(
-    @Param() { boardId }: { boardId: string },
-    @Res() res: Response,
-  ) {
+  async getCollaborationRequests(@Param('boardId') boardId: string) {
     const requests =
       await this.collaborationRequestService.getCollaborationRequestsByBoardId(
         boardId,
       );
 
-    return res.json({ requests });
+    return { requests };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get(':boardId/:userId/status')
+  async getReqsetStatus(
+    @Param('boardId') boardId: string,
+    @Param('userId') userId: string,
+  ) {
+    const status = await this.collaborationRequestService.requestStatus(
+      boardId,
+      userId,
+    );
+
+    return { status };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Get(':userId/u')
+  async getCurrentUsersRequests(@Param('userId') userId: string) {
+    const requests =
+      await this.collaborationRequestService.getCurrentUsersRequests(userId);
+
+    return { requests };
   }
 
   @HttpCode(HttpStatus.CREATED)
   @Post('')
   async requestCollaboration(
-    @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
-    @Body() { link }: { link: string },
-    @Res() res: Response,
+    @CurrentUser() user: CurrentUserType,
+    @Body() { boardId }: { boardId: string },
   ) {
     const request = await this.collaborationRequestService.requestCollaboration(
       user._id.toString(),
-      link,
+      boardId,
     );
 
-    return res.json({
+    return {
       message: 'collaboration request send',
       request,
-    });
+    };
   }
 
   @HttpCode(HttpStatus.OK)
   @Patch('/:boardId/:requestedUserId/accept')
   async accecptCollaborationRequest(
-    @Param()
-    { boardId, requestedUserId }: { boardId: string; requestedUserId: string },
-    @Res() res: Response,
+    @Param('boardId') boardId: string,
+    @Param('requestedUserId') requestedUserId: string,
   ) {
     const request =
       await this.collaborationRequestService.acceptCollaborationRequest(
@@ -68,18 +86,17 @@ export class CollaborationRequestController {
         requestedUserId,
       );
 
-    return res.json({
+    return {
       message: 'collaboration request accepted',
       request,
-    });
+    };
   }
 
   @HttpCode(HttpStatus.OK)
   @Patch(':boardId/:requestedUserId/reject')
   async rejectCollaborationRequest(
-    @Param()
-    { boardId, requestedUserId }: { boardId: string; requestedUserId: string },
-    @Res() res: Response,
+    @Param('boardId') boardId: string,
+    @Param('requestedUserId') requestedUserId: string,
   ) {
     const request =
       await this.collaborationRequestService.rejectCollaborationRequest(
@@ -87,9 +104,9 @@ export class CollaborationRequestController {
         requestedUserId,
       );
 
-    return res.json({
+    return {
       message: 'collaboration request rejected',
       request,
-    });
+    };
   }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -55,5 +56,14 @@ export class CollaboratorController {
       role,
     );
     return { collaborator, message: 'collaborator role updated' };
+  }
+
+  @Delete(':boardId/:userId')
+  async removeCollaboratr(
+    @Param('boardId') boardId: string,
+    @Param('userId') userId: string,
+  ) {
+    await this.collaboratorService.removeCollaborator(boardId, userId);
+    return { message: 'collaborator removed' };
   }
 }

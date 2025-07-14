@@ -87,12 +87,14 @@ export class CollaborationRequestService {
 
     // Checking if the user already requested for collaboration
     if (alreadyRequested) {
+    if (alreadyRequested && alreadyRequested.status === 'pending') {
       throw new ConflictException('already requested please wait');
     }
     // Creating a new request for collaboration
     const newRequest = await this.collaborationRequestRespository.create({
       boardId: new Types.ObjectId(boardId),
       userId: new Types.ObjectId(userId),
+      status: 'pending',
     });
     await this.boardMetadataService.addCollaborator(boardId, userId);
 
@@ -178,4 +180,11 @@ export class CollaborationRequestService {
   async dropAllRequests(boardId: string): Promise<void> {
     return this.collaborationRequestRespository.deleteMany({ boardId });
   }
+
+  async requestStatus(boardId: string, userId: string): Promise<any> {
+    const request = await this.collaborationRequestRespository.findOne(
+      {
+        boardId: new Types.ObjectId(boardId),
+        userId: new Types.ObjectId(userId),
+      },
 }

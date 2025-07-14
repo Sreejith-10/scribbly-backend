@@ -38,6 +38,15 @@ export class UserService {
       {
         username,
       },
+      {
+        projection: {
+          email: true,
+          username: true,
+          avatarUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     );
 
     return updatedUser as User;

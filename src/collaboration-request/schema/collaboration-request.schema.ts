@@ -22,6 +22,9 @@ export class CollaborationRequest extends AbstractDocument {
 
   @Prop({ type: Date, expires: 86400 })
   expiresAt?: Date;
+
+  @Prop({ type: Number, default: 0 })
+  requestCount?: 0;
 }
 
 export const CollaborationRequestSchema =
