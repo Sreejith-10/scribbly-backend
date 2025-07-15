@@ -1,14 +1,23 @@
-import { Injectable, NotFoundException, UseInterceptors } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UseInterceptors,
+} from '@nestjs/common';
 import { Collaborator } from './schema';
 import { CatchErrorsInterceptor } from 'src/common/interceptor';
 import { CollaboratorRespository } from './collaborator.respository';
 import { Types } from 'mongoose';
+import { BoardService } from 'src/board';
 
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class CollaboratorService {
   constructor(
     private readonly collaboratorReposiotry: CollaboratorRespository,
+    @Inject(forwardRef(() => BoardService))
+    private readonly boardService: BoardService,
   ) {}
 
   async getCollaborators(): Promise<Collaborator[]> {
@@ -84,10 +93,12 @@ export class CollaboratorService {
   }
 
   async removeCollaborator(boardId: string, userId: string) {
-    return this.collaboratorReposiotry.deleteOne({
+    await this.collaboratorReposiotry.deleteOne({
       boardId: new Types.ObjectId(boardId),
       userId: new Types.ObjectId(userId),
     });
+
+    await this.boardService.removeCollaborator(boardId, userId);
   }
 
   async removeAllCollaborator(boardId: string) {

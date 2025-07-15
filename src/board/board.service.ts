@@ -136,7 +136,7 @@ export class BoardService {
   async addDelta(
     boardId: string,
     delta: {
-      operation: 'create' | 'update' | 'delete';
+      operation: 'create' | 'update' | 'delete' | 'move';
       shapeId: string;
       data?: any;
     },
@@ -251,8 +251,15 @@ export class BoardService {
 
   async addCollaborator(boardId: string, userId: string) {
     return this.boardRespository.findOneAndUpdate(
-      { _id: boardId },
+      { _id: new Types.ObjectId(boardId) },
       { $push: { collaborators: new Types.ObjectId(userId) } },
+    );
+  }
+
+  async removeCollaborator(boardId: string, userId: string) {
+    return this.boardRespository.findOneAndUpdate(
+      { _id: new Types.ObjectId(boardId) },
+      { $pull: { collaborators: new Types.ObjectId(userId) } },
     );
   }
 }
