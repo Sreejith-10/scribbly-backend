@@ -42,13 +42,14 @@ export class WebsocketGateway
   async handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
     await this.websocketService.unregisterClient(client.id);
+    await this.websocketService.leaveBoard(client.id);
   }
 
   onModuleInit() {
     this.server.use(this.wsAuthMiddleware.use.bind(this.wsAuthMiddleware));
   }
 
-  @SubscribeMessage('join-board')
+  @SubscribeMessage('joinBoard')
   async handleJoinBoard(
     @ConnectedSocket() client: Socket,
     @MessageBody() paylod: { boardId: string },
@@ -60,7 +61,7 @@ export class WebsocketGateway
       const boardState = await this.websocketService.getBoardState(
         paylod.boardId,
       );
-      client.emit('board-state', boardState);
+      client.emit('boardState', boardState);
 
       this.server.to(paylod.boardId).emit('userJoined', {
         userId: client.id,
@@ -87,7 +88,7 @@ export class WebsocketGateway
   @SubscribeMessage('boardUpdate')
   async handleBoardUpdate(
     @ConnectedSocket() client: Socket,
-    payload: { delta: any },
+    @MessageBody() payload: { delta: any },
   ) {
     try {
       const boardId = await this.websocketService.getClientBoard(client.id);
@@ -105,5 +106,20 @@ export class WebsocketGateway
       this.logger.error(`Update error: ${error.message}`);
       return { status: 'error', message: error.message };
     }
+  }
+
+  @SubscribeMessage('activeUsers')
+  async activeUsers(@ConnectedSocket() client: Socket) {
+    const members = await this.websocketService.activeUsers(client.id);
+    this.server.send(members);
+  }
+
+  @SubscribeMessage('boardChange')
+  async boardChange(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: any,
+  ) {
+    const board = await this.websocketService.getClientBoard(client.id);
+    this.server.in(board).emit('updatedBoard', payload);
   }
 }

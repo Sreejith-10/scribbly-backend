@@ -250,9 +250,10 @@ export class BoardService {
   }
 
   async addCollaborator(boardId: string, userId: string) {
+    const id = new Types.ObjectId(userId);
     return this.boardRespository.findOneAndUpdate(
       { _id: new Types.ObjectId(boardId) },
-      { $push: { collaborators: new Types.ObjectId(userId) } },
+      { $push: { collaborators: id } },
     );
   }
 

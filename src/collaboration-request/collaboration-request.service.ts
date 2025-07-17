@@ -137,6 +137,7 @@ export class CollaborationRequestService {
 
     // update the user in board collection
     await this.boardService.addCollaborator(boardId, requestedUserId);
+    await this.boardMetadataService.addCollaborator(boardId, requestedUserId);
 
     return acceptedRequest;
   }

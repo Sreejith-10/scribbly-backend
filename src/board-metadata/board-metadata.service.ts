@@ -133,7 +133,7 @@ export class BoardMetadataService {
 
   async addCollaborator(boardId: string, userId: string) {
     return this.boardMetadataRespository.findOneAndUpdate(
-      { _id: boardId },
+      { boardId: new Types.ObjectId(boardId) },
       { $push: { collaborators: new Types.ObjectId(userId) } },
     );
   }

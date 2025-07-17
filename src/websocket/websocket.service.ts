@@ -145,4 +145,12 @@ export class WebsocketService {
       ),
     };
   }
+
+  async activeUsers(clientId: string) {
+    const boardId = await this.getClientBoard(clientId);
+    const members = await this.redisService.sMembers(
+      `${this.BOARD_PREFIX}${boardId}:members`,
+    );
+    return members;
+  }
 }
