@@ -23,31 +23,46 @@ export class WsAuthMiddleware {
   ) {}
 
   async use(socket: Socket, next: (err?: Error) => void) {
-    const token = socket.handshake.headers.cookie;
-    const accessToken = this.transformCookie(token, 'accessToken');
-    const refreshToken = this.transformCookie(token, 'refreshToken');
-    if (!accessToken && !refreshToken) {
+    try {
+      const token = socket.handshake.headers.cookie;
+      const accessToken = this.transformCookie(token, 'accessToken');
+      const refreshToken = this.transformCookie(token, 'refreshToken');
+
+      if (!accessToken && !refreshToken) {
+        return next(new Error('Not authenticated'));
+      }
+
+      // First try access token
+      if (accessToken) {
+        const aT = await this.verifyToken(
+          accessToken,
+          this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
+        );
+
+        if (!aT.expired) {
+          socket.user = aT.data;
+          return next(); // Return after first successful auth
+        }
+      }
+
+      // Fall back to refresh token if access token is invalid/expired
+      if (refreshToken) {
+        const rT = await this.verifyToken(
+          refreshToken,
+          this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
+        );
+
+        if (!rT.expired) {
+          socket.user = rT.data;
+          return next(); // Return after fallback auth
+        }
+      }
+
+      // If we get here, no valid tokens were found
       return next(new Error('Not authenticated'));
-    }
-    const aT = await this.verifyToken(
-      accessToken,
-      this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
-    );
-    if (!aT.expired) {
-      socket.user = aT.data;
-      next();
-    }
-
-    const rT = await this.verifyToken(
-      refreshToken,
-      this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
-    );
-
-    if (!rT.expired) {
-      socket.user = rT.data;
-      next();
-    } else {
-      return next(new Error('not authenticated'));
+    } catch (error) {
+      this.logger.error(`Authentication error: ${error.message}`);
+      return next(new Error('Authentication failed'));
     }
   }
 

@@ -129,6 +129,7 @@ export class WebsocketService {
 
   async getBoardState(boardId: string): Promise<{
     snapshot: Board['snapshot'];
+    currentState: any;
     deltas: Board['deltas'];
     members: string[];
   }> {
@@ -139,6 +140,7 @@ export class WebsocketService {
 
     return {
       snapshot: board.snapshot,
+      currentState: board.currentState,
       deltas: board.deltas,
       members: await this.redisService.sMembers(
         `${this.BOARD_PREFIX}${boardId}:members`,

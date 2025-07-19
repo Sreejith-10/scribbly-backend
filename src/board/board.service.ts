@@ -168,7 +168,8 @@ export class BoardService {
   }
 
   private async getNextSequence(boardId: string) {
-    const board = await this.boardRespository.findById(boardId);
+    const id = new Types.ObjectId(boardId);
+    const board = await this.boardRespository.findById(id);
     if (!board) {
       throw new NotFoundException('Board does not exist');
     }

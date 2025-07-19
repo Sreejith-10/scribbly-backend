@@ -16,7 +16,8 @@ import { WsAuthMiddleware } from 'src/common/middlewares';
   cookie: true,
   cors: {
     credentials: true,
-    origin: process.env.CLIENT,
+    origin: '*',
+    // origin: process.env.CLIENT,
   },
   pingInterval: 30000,
   pingTimeout: 10000,
@@ -41,8 +42,13 @@ export class WebsocketGateway
 
   async handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
+    const boardId = await this.websocketService.getClientBoard(client.id);
+    if (boardId) {
+      await this.websocketService.leaveBoard(client.id);
+      client.leave(boardId);
+      client.to(boardId).emit('userLeft', { userId: client.id });
+    }
     await this.websocketService.unregisterClient(client.id);
-    await this.websocketService.leaveBoard(client.id);
   }
 
   onModuleInit() {
@@ -55,6 +61,8 @@ export class WebsocketGateway
     @MessageBody() paylod: { boardId: string },
   ) {
     try {
+      await this.websocketService.leaveBoard(client.id);
+
       await this.websocketService.joinBoard(client.id, paylod.boardId);
       client.join(paylod.boardId);
 
@@ -63,7 +71,7 @@ export class WebsocketGateway
       );
       client.emit('boardState', boardState);
 
-      this.server.to(paylod.boardId).emit('userJoined', {
+      client.to(paylod.boardId).emit('userJoined', {
         userId: client.id,
         timestamp: Date.now(),
       });
@@ -81,14 +89,19 @@ export class WebsocketGateway
     if (boardId) {
       await this.websocketService.leaveBoard(client.id);
       client.leave(boardId);
-      this.server.to(boardId).emit('userLeft', { userId: client.id });
+      client.to(boardId).emit('userLeft', { userId: client.id });
     }
   }
 
   @SubscribeMessage('boardUpdate')
   async handleBoardUpdate(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { delta: any },
+    @MessageBody()
+    payload: {
+      operation: 'create' | 'update' | 'delete' | 'move';
+      shapeId: string;
+      data?: any;
+    },
   ) {
     try {
       const boardId = await this.websocketService.getClientBoard(client.id);
@@ -97,10 +110,10 @@ export class WebsocketGateway
       const processedDelta = await this.websocketService.processDelta(
         boardId,
         client.id,
-        payload.delta,
+        payload,
       );
 
-      this.server.to(boardId).emit('boardUpdate', processedDelta);
+      client.to(boardId).emit('boardUpdate', processedDelta);
       return { status: 'success' };
     } catch (error) {
       this.logger.error(`Update error: ${error.message}`);
@@ -111,7 +124,7 @@ export class WebsocketGateway
   @SubscribeMessage('activeUsers')
   async activeUsers(@ConnectedSocket() client: Socket) {
     const members = await this.websocketService.activeUsers(client.id);
-    this.server.send(members);
+    client.emit('activeUsers', members);
   }
 
   @SubscribeMessage('boardChange')
@@ -120,6 +133,18 @@ export class WebsocketGateway
     @MessageBody() payload: any,
   ) {
     const board = await this.websocketService.getClientBoard(client.id);
-    this.server.in(board).emit('updatedBoard', payload);
+    client.to(board).emit('updatedBoard', payload);
+  }
+
+  @SubscribeMessage('mouseMove')
+  async mouseMove(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() paylod: { x: number; y: number },
+  ) {
+    const board = await this.websocketService.getClientBoard(client.id);
+
+    client
+      .to(board)
+      .emit('mouseMove', { x: paylod.x, y: paylod.y, userId: client.id });
   }
 }
