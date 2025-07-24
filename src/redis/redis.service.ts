@@ -13,7 +13,7 @@ export class RedisService {
       port: this.configService.get('REDIS_PORT'),
       password: this.configService.get('REDIS_PASSWORD'),
       db: this.configService.get('REDIS_DB'),
-      maxRetriesPerRequest: 20,
+      maxRetriesPerRequest: 10,
       connectTimeout: 5000,
     });
 

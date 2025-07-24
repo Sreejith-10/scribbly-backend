@@ -162,8 +162,13 @@ export class BoardService {
       },
     );
 
-    await this.deltaHistoryService.createHistory(boardId, userId, delta);
-
+    await Promise.all([
+      this.deltaHistoryService.createHistory(boardId, userId, delta),
+      this.boardMetadataService.updateBoardMetada(boardId, {
+        lastUpdatedAt: new Date(),
+        lastUpdatedBy: new Types.ObjectId(userId),
+      }),
+    ]);
     return this.computeCurrentState(board);
   }
 

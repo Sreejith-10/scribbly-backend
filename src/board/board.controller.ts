@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   NotFoundException,
   Param,
   Patch,
@@ -20,7 +21,8 @@ import { CurrentUserType } from 'src/utils/types';
 @UseGuards(JwtAuthGuard)
 @Controller('boards')
 export class BoardController {
-  constructor(private readonly boardService: BoardService) {}
+  private readonly logger = new Logger(BoardController.name)
+  constructor(private readonly boardService: BoardService) { }
 
   @HttpCode(HttpStatus.OK)
   @Get('/')
@@ -117,6 +119,7 @@ export class BoardController {
     @Param('id') boardId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
+    this.logger.log(boardId)
     const lastDelta = await this.boardService.getLastUserDelta(
       boardId,
       user._id.toString(),
@@ -127,6 +130,17 @@ export class BoardController {
     return this.boardService.addDelta(
       boardId,
       inverseDelta,
+      user._id.toString(),
+    );
+  }
+
+  @Patch(':id/redo')
+  async redoLastAction(
+    @Param('id') boardId: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    const lastDelta = await this.boardService.getLastUserDelta(
+      boardId,
       user._id.toString(),
     );
   }

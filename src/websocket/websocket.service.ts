@@ -38,6 +38,7 @@ export class WebsocketService {
 
     const board = await this.boardService.findBoard(boardId);
     if (!board) {
+      this.logger.error('Board not found');
       throw new Error('Board not found');
     }
 
@@ -84,19 +85,10 @@ export class WebsocketService {
       shapeId: string;
       data?: any;
     },
-  ): Promise<{
-    sequence: number;
-    delta: {
-      operation: string;
-      shapeId: string;
-      data?: any;
-      timestamp: Date;
-      author: string;
-      sequence: number;
-    };
-  }> {
+  ): Promise<any> {
     const userId = await this.getClientUserId(clientId);
     if (!userId) {
+      this.logger.error('User not authenticated');
       throw new Error('User not authenticated');
     }
 
@@ -109,22 +101,13 @@ export class WebsocketService {
     );
 
     if (!updatedBoard) {
+      this.logger.error('Failed to proces delta');
       throw new Error('Failed to process delta');
     }
 
-    const latestDelta = updatedBoard.deltas[updatedBoard.deltas.length - 1];
+    const boardState = await this.boardService.getBoardState(boardId);
 
-    return {
-      sequence: updatedBoard.sequence,
-      delta: {
-        operation: latestDelta.operation,
-        shapeId: latestDelta.shapeId,
-        data: latestDelta.data,
-        author: latestDelta.author,
-        timestamp: latestDelta.timestamp,
-        sequence: latestDelta.sequence,
-      },
-    };
+    return boardState;
   }
 
   async getBoardState(boardId: string): Promise<{
@@ -135,6 +118,7 @@ export class WebsocketService {
   }> {
     const board = await this.boardService.getBoardState(boardId);
     if (!board) {
+      this.logger.error('Board not found');
       throw new Error('Board not found');
     }
 
