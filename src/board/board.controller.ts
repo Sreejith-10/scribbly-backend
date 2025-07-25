@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -21,7 +20,7 @@ import { CurrentUserType } from 'src/utils/types';
 @UseGuards(JwtAuthGuard)
 @Controller('boards')
 export class BoardController {
-  private readonly logger = new Logger(BoardController.name)
+  private readonly logger = new Logger(BoardController.name);
   constructor(private readonly boardService: BoardService) { }
 
   @HttpCode(HttpStatus.OK)
@@ -117,21 +116,15 @@ export class BoardController {
   @Patch(':id/undo')
   async undoLastAction(
     @Param('id') boardId: string,
-    @CurrentUser() user: CurrentUserType,
   ) {
-    this.logger.log(boardId)
-
-    return this.boardService.undoLastAction(
-      boardId
-    )
+    return this.boardService.undoLastAction(boardId);
   }
 
   @Patch(':id/redo')
   async redoLastAction(
     @Param('id') boardId: string,
-    @CurrentUser() user: CurrentUserType,
   ) {
-    return this.boardService.redoLastAction(boardId)
+    return this.boardService.redoLastAction(boardId);
   }
 
   // 4. State Management
@@ -145,25 +138,14 @@ export class BoardController {
     return this.boardService.createSnapshot(boardId);
   }
 
-  @Patch(":id/reset")
+  @Patch(':id/reset')
   async resetBoard(@Param('id') boardId: string) {
-    await this.boardService.resetBoard(boardId)
-    const state = await this.boardService.getBoardState(boardId)
+    await this.boardService.resetBoard(boardId);
+    const state = await this.boardService.getBoardState(boardId);
 
     return {
       state,
-      message: "board reseted"
-    }
-  }
-
-  private createInverseDelta(delta: any) {
-    switch (delta.operation) {
-      case 'create':
-        return { ...delta, operation: 'delete' };
-      case 'delete':
-        return { ...delta, operation: 'create', data: delta.data };
-      case 'update':
-        return { ...delta, data: delta.previousData };
-    }
+      message: 'board reseted',
+    };
   }
 }

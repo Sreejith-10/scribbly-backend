@@ -15,7 +15,6 @@ import { Board } from './schema';
 import { CollaboratorService } from 'src/collaborator';
 import { DeltaHistoryService } from 'src/delta-history';
 import { CollaborationRequestService } from 'src/collaboration-request';
-import { throwError } from 'rxjs';
 
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
@@ -27,7 +26,7 @@ export class BoardService {
     private readonly deltaHistoryService: DeltaHistoryService,
     @Inject(forwardRef(() => CollaborationRequestService))
     private readonly collaborationRequestService: CollaborationRequestService,
-  ) { }
+  ) {}
 
   async getBoards(userId: string): Promise<Board[]> {
     const boards = await this.boardRespository.aggregate([
@@ -208,7 +207,8 @@ export class BoardService {
   private async computeCurrentState(board: Board) {
     const state = JSON.parse(JSON.stringify(board.snapshot.shapes || {}));
 
-    board.deltas.filter(a => a.sequence <= board.sequence)
+    board.deltas
+      .filter((a) => a.sequence <= board.sequence)
       .sort((a, b) => a.sequence - b.sequence)
       .forEach((delta) => {
         switch (delta.operation) {
@@ -273,64 +273,75 @@ export class BoardService {
   }
 
   async resetBoard(boardId: string) {
-    const boardExist = await this.boardRespository.exists({ _id: new Types.ObjectId(boardId) })
+    const boardExist = await this.boardRespository.exists({
+      _id: new Types.ObjectId(boardId),
+    });
 
     if (!boardExist) {
-      throw new NotFoundException('board does not exist')
+      throw new NotFoundException('board does not exist');
     }
 
-    return this.boardRespository.findOneAndUpdate({ _id: new Types.ObjectId(boardId) }, {
-      snapshot: {
-        shapes: {},
-        version: 0
+    return this.boardRespository.findOneAndUpdate(
+      { _id: new Types.ObjectId(boardId) },
+      {
+        snapshot: {
+          shapes: {},
+          version: 0,
+        },
+        deltas: [],
+        sequence: 0,
       },
-      deltas: [],
-      sequence: 0
-    })
+    );
   }
 
   async undoLastAction(boardId: string) {
-    const board = await this.boardRespository.findById(boardId)
+    const board = await this.boardRespository.findById(boardId);
 
     if (!board) {
-      throw new NotFoundException('board does not exist')
+      throw new NotFoundException('board does not exist');
     }
 
-    const lastDelta = board.deltas.find(a => a.sequence === board.sequence)
+    const lastDelta = board.deltas.find((a) => a.sequence === board.sequence);
 
     if (!lastDelta || lastDelta.sequence < 1) {
-      throw new BadRequestException('nothing to undo')
+      throw new BadRequestException('nothing to undo');
     }
 
-    await this.boardRespository.findOneAndUpdate({ _id: new Types.ObjectId(boardId) }, {
-      $set: {
-        sequence: board.sequence - 1
-      }
-    })
+    await this.boardRespository.findOneAndUpdate(
+      { _id: new Types.ObjectId(boardId) },
+      {
+        $set: {
+          sequence: board.sequence - 1,
+        },
+      },
+    );
 
-    return lastDelta
+    return lastDelta;
   }
 
   async redoLastAction(boardId: string) {
-    const board = await this.boardRespository.findById(boardId)
+    const board = await this.boardRespository.findById(boardId);
 
     if (!board) {
-      throw new NotFoundException('board does not exist')
+      throw new NotFoundException('board does not exist');
     }
 
-    const lastDelta = board.deltas[board.deltas.length - 1]
+    const lastDelta = board.deltas[board.deltas.length - 1];
 
     if (!lastDelta || lastDelta.sequence === board.sequence) {
-      throw new BadRequestException('nothing to redo')
+      throw new BadRequestException('nothing to redo');
     }
 
-    await this.boardRespository.findOneAndUpdate({ _id: new Types.ObjectId(boardId) }, {
-      $set: {
-        sequence: board.sequence + 1
-      }
-    })
+    await this.boardRespository.findOneAndUpdate(
+      { _id: new Types.ObjectId(boardId) },
+      {
+        $set: {
+          sequence: board.sequence + 1,
+        },
+      },
+    );
 
-    return lastDelta
+    return lastDelta;
   }
 
   private inverseDelta(delta: any) {
