@@ -120,18 +120,10 @@ export class BoardController {
     @CurrentUser() user: CurrentUserType,
   ) {
     this.logger.log(boardId)
-    const lastDelta = await this.boardService.getLastUserDelta(
-      boardId,
-      user._id.toString(),
-    );
-    if (!lastDelta) throw new NotFoundException('No actions to undo');
 
-    const inverseDelta = this.createInverseDelta(lastDelta);
-    return this.boardService.addDelta(
-      boardId,
-      inverseDelta,
-      user._id.toString(),
-    );
+    return this.boardService.undoLastAction(
+      boardId
+    )
   }
 
   @Patch(':id/redo')
@@ -139,10 +131,7 @@ export class BoardController {
     @Param('id') boardId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
-    const lastDelta = await this.boardService.getLastUserDelta(
-      boardId,
-      user._id.toString(),
-    );
+    return this.boardService.redoLastAction(boardId)
   }
 
   // 4. State Management
@@ -154,6 +143,17 @@ export class BoardController {
   @Patch(':id/snapshot')
   async createSnapshot(@Param('id') boardId: string) {
     return this.boardService.createSnapshot(boardId);
+  }
+
+  @Patch(":id/reset")
+  async resetBoard(@Param('id') boardId: string) {
+    await this.boardService.resetBoard(boardId)
+    const state = await this.boardService.getBoardState(boardId)
+
+    return {
+      state,
+      message: "board reseted"
+    }
   }
 
   private createInverseDelta(delta: any) {
