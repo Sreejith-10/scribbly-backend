@@ -80,4 +80,14 @@ export class AuthController {
 
     return { accessTokenHash, refreshTokenHash };
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Get('session')
+  async verifySession(@Req() req: Request) {
+    const valid = await this.authService.verifySession(
+      req.cookies.accessToken,
+      req.cookies.refreshToken,
+    );
+    return valid;
+  }
 }

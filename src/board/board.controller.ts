@@ -21,7 +21,7 @@ import { CurrentUserType } from 'src/utils/types';
 @Controller('boards')
 export class BoardController {
   private readonly logger = new Logger(BoardController.name);
-  constructor(private readonly boardService: BoardService) { }
+  constructor(private readonly boardService: BoardService) {}
 
   @HttpCode(HttpStatus.OK)
   @Get('/')
@@ -100,6 +100,7 @@ export class BoardController {
     @Param('shapeId') shapeId: string,
     @CurrentUser() user: CurrentUserType,
   ) {
+    console.log('call');
     const delta = this.boardService.addDelta(
       boardId,
       {
@@ -114,16 +115,12 @@ export class BoardController {
 
   // 3. Undo/Redo Endpoints
   @Patch(':id/undo')
-  async undoLastAction(
-    @Param('id') boardId: string,
-  ) {
+  async undoLastAction(@Param('id') boardId: string) {
     return this.boardService.undoLastAction(boardId);
   }
 
   @Patch(':id/redo')
-  async redoLastAction(
-    @Param('id') boardId: string,
-  ) {
+  async redoLastAction(@Param('id') boardId: string) {
     return this.boardService.redoLastAction(boardId);
   }
 

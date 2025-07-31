@@ -72,7 +72,8 @@ export class AuthService {
         name: user.username,
       },
       this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
-      this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
+      // this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
+      0,
     );
 
     const refreshToken = this.generateToken(
@@ -149,5 +150,50 @@ export class AuthService {
 
   async hashToken(token: string): Promise<string> {
     return hash(token, 12);
+  }
+
+  async verifySession(aT: string, rT: string) {
+    if (!aT && !rT) {
+      throw new UnauthorizedException();
+    }
+
+    const { expired, data } = await this.verifyJwt(
+      aT,
+      this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
+    );
+
+    if (expired) {
+      const { expired, data } = await this.verifyJwt(
+        rT,
+        this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
+      );
+
+      if (expired) {
+        throw new UnauthorizedException();
+      }
+
+      return { data };
+    }
+
+    return { data };
+  }
+
+  private async verifyJwt(token: string, secret: string) {
+    let expired = false;
+    let data = null;
+
+    jwt.verify(token, secret, (error, decode) => {
+      if (error) {
+        if (error.message.includes('jwt expired')) {
+          expired = true;
+        }
+      }
+
+      if (decode) {
+        data = decode;
+      }
+    });
+
+    return { expired, data };
   }
 }
