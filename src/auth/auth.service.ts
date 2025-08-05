@@ -72,8 +72,7 @@ export class AuthService {
         name: user.username,
       },
       this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
-      // this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
-      0,
+      this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
     );
 
     const refreshToken = this.generateToken(

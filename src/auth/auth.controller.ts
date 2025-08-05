@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Patch,
   Post,
   Req,
@@ -16,10 +17,16 @@ import { Response, Request } from 'express';
 import { JwtAuthGuard, JwtRefreshAuthGuard } from '../common/guards/auth';
 import { CurrentUser } from '../common/decorators';
 import { User } from 'src/user/schema';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  logger = new Logger(AuthController.name);
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
@@ -33,8 +40,22 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res() res: Response) {
     const { accessToken, refreshToken, user } =
       await this.authService.login(dto);
-    res.cookie('accessToken', accessToken, { httpOnly: true });
-    res.cookie('refreshToken', refreshToken, { httpOnly: true });
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      expires: new Date(
+        Date.now() +
+          Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
+      ),
+    });
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      expires: new Date(
+        Date.now() +
+          Number(
+            this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
+          ),
+      ),
+    });
     return res.json({ message: 'logged in successfully', user });
   }
 
