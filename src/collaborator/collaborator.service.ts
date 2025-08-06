@@ -2,6 +2,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UseInterceptors,
 } from '@nestjs/common';
@@ -14,6 +15,8 @@ import { BoardService } from 'src/board';
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class CollaboratorService {
+  logger = new Logger(CollaboratorService.name);
+
   constructor(
     private readonly collaboratorReposiotry: CollaboratorRespository,
     @Inject(forwardRef(() => BoardService))
@@ -110,9 +113,9 @@ export class CollaboratorService {
   async updateCollaboratorStatus(
     boardId: string,
     userId: string,
-    status: string,
+    status: 'active' | 'inactive',
   ) {
-    this.collaboratorReposiotry.findOneAndUpdate(
+    return this.collaboratorReposiotry.findOneAndUpdate(
       {
         boardId: new Types.ObjectId(boardId),
         userId: new Types.ObjectId(userId),

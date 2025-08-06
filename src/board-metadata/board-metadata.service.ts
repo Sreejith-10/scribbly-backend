@@ -128,7 +128,9 @@ export class BoardMetadataService {
   }
 
   async deleteBoardMetada(boardId: string) {
-    return this.boardMetadataRespository.deleteOne({ boardId });
+    return this.boardMetadataRespository.deleteOne({
+      boardId: new Types.ObjectId(boardId),
+    });
   }
 
   async addCollaborator(boardId: string, userId: string) {

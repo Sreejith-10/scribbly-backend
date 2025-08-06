@@ -44,11 +44,11 @@ export class WebsocketGateway
     this.logger.log(`Client disconnected: ${client.id}`);
     const boardId = await this.websocketService.getClientBoard(client.id);
     if (boardId) {
-      await this.websocketService.leaveBoard(client.id);
+      await this.websocketService.leaveBoard(client.id, client.user.uid);
       client.leave(boardId);
       client.to(boardId).emit('userLeft', { userId: client.id });
     }
-    await this.websocketService.unregisterClient(client.id);
+    await this.websocketService.unregisterClient(client.id, client.user.uid);
   }
 
   onModuleInit() {
@@ -61,9 +61,13 @@ export class WebsocketGateway
     @MessageBody() paylod: { boardId: string },
   ) {
     try {
-      await this.websocketService.leaveBoard(client.id);
+      await this.websocketService.leaveBoard(client.id, client.user.uid);
 
-      await this.websocketService.joinBoard(client.id, paylod.boardId);
+      await this.websocketService.joinBoard(
+        client.id,
+        paylod.boardId,
+        client.user.uid,
+      );
       client.join(paylod.boardId);
 
       const boardState = await this.websocketService.getBoardState(
@@ -87,7 +91,7 @@ export class WebsocketGateway
   async handleLeaveBoard(client: Socket) {
     const boardId = await this.websocketService.getClientBoard(client.id);
     if (boardId) {
-      await this.websocketService.leaveBoard(client.id);
+      await this.websocketService.leaveBoard(client.id, client.user.uid);
       client.leave(boardId);
       client.to(boardId).emit('userLeft', { userId: client.id });
     }

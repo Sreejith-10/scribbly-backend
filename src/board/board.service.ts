@@ -4,6 +4,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,6 +20,8 @@ import { CollaborationRequestService } from 'src/collaboration-request';
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class BoardService {
+  logger = new Logger(BoardService.name);
+
   constructor(
     private readonly boardRespository: BoardRepository,
     private readonly boardMetadataService: BoardMetadataService,
@@ -128,10 +131,36 @@ export class BoardService {
     return board;
   }
 
-  async deleteBoard(boardId: string) {
-    await this.collaboratorService.removeAllCollaborator(boardId);
-    await this.collaborationRequestService.dropAllRequests(boardId);
-    await this.boardRespository.deleteMany({ _id: boardId });
+  async deleteBoard(boardId: string, userId: string) {
+    const board = await this.boardRespository.findOne({
+      _id: new Types.ObjectId(boardId),
+      ownerId: new Types.ObjectId(userId),
+    });
+    if (!board) {
+      throw new NotFoundException('board deos not exist');
+    }
+
+    this.logger.log(board.title);
+
+    if (board.accessMode === 'private') {
+      return Promise.all([
+        await this.boardRespository.deleteOne({
+          _id: new Types.ObjectId(boardId),
+          ownerId: new Types.ObjectId(userId),
+        }),
+        await this.boardMetadataService.deleteBoardMetada(boardId),
+      ]);
+    }
+
+    return Promise.all([
+      await this.boardMetadataService.deleteBoardMetada(boardId),
+      await this.collaboratorService.removeAllCollaborator(boardId),
+      await this.collaborationRequestService.dropAllRequests(boardId),
+      await this.boardRespository.deleteOne({
+        _id: new Types.ObjectId(boardId),
+        ownerId: new Types.ObjectId(userId),
+      }),
+    ]);
   }
 
   async addDelta(

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BoardService } from 'src/board';
 import { Board } from 'src/board/schema';
+import { CollaboratorService } from 'src/collaborator';
 import { RedisService } from 'src/redis';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class WebsocketService {
   constructor(
     private readonly redisService: RedisService,
     private readonly boardService: BoardService,
+    private readonly collaboratorService: CollaboratorService,
   ) {}
 
   async registerClient(clientId: string, userId: string): Promise<void> {
@@ -22,18 +24,22 @@ export class WebsocketService {
     );
   }
 
-  async unregisterClient(clientId: string): Promise<void> {
+  async unregisterClient(clientId: string, userId: string): Promise<void> {
     const boardId = await this.getClientBoard(clientId);
     if (boardId) {
-      await this.leaveBoard(clientId);
+      await this.leaveBoard(clientId, userId);
     }
     await this.redisService.del(`${this.CLIENT_PREFIX}${clientId}`);
   }
 
-  async joinBoard(clientId: string, boardId: string): Promise<Board> {
+  async joinBoard(
+    clientId: string,
+    boardId: string,
+    userId: string,
+  ): Promise<Board> {
     const currentBoard = await this.getClientBoard(clientId);
     if (currentBoard) {
-      await this.leaveBoard(clientId);
+      await this.leaveBoard(clientId, userId);
     }
 
     const board = await this.boardService.findBoard(boardId);
@@ -42,18 +48,25 @@ export class WebsocketService {
       throw new Error('Board not found');
     }
 
+    this.logger.log(clientId, boardId);
+
     await Promise.all([
       this.redisService.set(`${this.CLIENT_PREFIX}${clientId}:board`, boardId),
       this.redisService.sAdd(
         `${this.BOARD_PREFIX}${boardId}:members`,
         clientId,
       ),
+      this.collaboratorService.updateCollaboratorStatus(
+        boardId,
+        userId,
+        'active',
+      ),
     ]);
 
     return board;
   }
 
-  async leaveBoard(clientId: string): Promise<void> {
+  async leaveBoard(clientId: string, userId: string): Promise<void> {
     const boardId = await this.getClientBoard(clientId);
     if (!boardId) return;
 
@@ -62,6 +75,11 @@ export class WebsocketService {
       this.redisService.sRem(
         `${this.BOARD_PREFIX}${boardId}:members`,
         clientId,
+      ),
+      this.collaboratorService.updateCollaboratorStatus(
+        boardId,
+        userId,
+        'inactive',
       ),
     ]);
   }

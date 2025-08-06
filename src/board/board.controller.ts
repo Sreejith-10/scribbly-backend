@@ -145,4 +145,13 @@ export class BoardController {
       message: 'board reseted',
     };
   }
+
+  @Delete(':id')
+  async deleteBoard(
+    @Param('id') boardId: string,
+    @CurrentUser() user: CurrentUserType,
+  ) {
+    await this.boardService.deleteBoard(boardId, user._id.toString());
+    return { message: 'board removed' };
+  }
 }
