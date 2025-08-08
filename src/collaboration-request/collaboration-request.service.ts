@@ -30,7 +30,6 @@ export class CollaborationRequestService {
   ) {}
 
   async getCollaborationRequestsByBoardId(boardId: string): Promise<any[]> {
-    console.log('boardId', boardId);
     // Query request document from database
     const requests = await this.collaborationRequestRespository.aggregate([
       {
@@ -90,7 +89,6 @@ export class CollaborationRequestService {
       userId: new Types.ObjectId(userId),
       status: 'pending',
     });
-    await this.boardMetadataService.addCollaborator(boardId, userId);
 
     return newRequest;
   }

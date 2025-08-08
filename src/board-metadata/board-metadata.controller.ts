@@ -16,9 +16,9 @@ import { User } from 'src/user/schema';
 @UseGuards(JwtAuthGuard)
 @Controller('board-metadata')
 export class BoardMetadataController {
-  logger = new Logger(BoardMetadataController.name)
+  logger = new Logger(BoardMetadataController.name);
 
-  constructor(private readonly boardMetadataService: BoardMetadataService) { }
+  constructor(private readonly boardMetadataService: BoardMetadataService) {}
 
   @HttpCode(HttpStatus.OK)
   @Get('')

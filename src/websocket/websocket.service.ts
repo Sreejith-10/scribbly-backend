@@ -100,7 +100,6 @@ export class WebsocketService {
     clientId: string,
     delta: {
       operation: 'create' | 'update' | 'delete' | 'move';
-      shapeId: string;
       data?: any;
     },
   ): Promise<any> {
@@ -113,6 +112,8 @@ export class WebsocketService {
     const updatedBoard = await this.boardService.addDelta(
       boardId,
       {
+        operation: delta.operation,
+        shapeId: delta.data.id,
         ...delta,
       },
       userId,
