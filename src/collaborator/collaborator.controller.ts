@@ -43,9 +43,9 @@ export class CollaboratorController {
     return { collaborator, message: 'collaborator added' };
   }
 
-  @HttpCode(HttpStatus.CREATED)
-  @Patch(':boardId/:userId')
-  async updateCollaborator(
+  @HttpCode(HttpStatus.OK)
+  @Patch(':boardId/:userId/role')
+  async updateCollaboratorRole(
     @Param('boardId') boardId: string,
     @Param('userId') userId: string,
     @Body() { role }: { role: 'edit' | 'view' },

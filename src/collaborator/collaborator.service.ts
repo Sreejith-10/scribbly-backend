@@ -122,6 +122,7 @@ export class CollaboratorService {
       },
       {
         status,
+        lastSeen: status === 'inactive' ? new Date() : null,
       },
     );
   }
