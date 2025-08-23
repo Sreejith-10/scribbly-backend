@@ -105,7 +105,6 @@ export class WebsocketService {
   ): Promise<any> {
     const userId = await this.getClientUserId(clientId);
     if (!userId) {
-      this.logger.error('User not authenticated');
       throw new Error('User not authenticated');
     }
 
@@ -120,7 +119,6 @@ export class WebsocketService {
     );
 
     if (!updatedBoard) {
-      this.logger.error('Failed to proces delta');
       throw new Error('Failed to process delta');
     }
 
@@ -157,5 +155,17 @@ export class WebsocketService {
       `${this.BOARD_PREFIX}${boardId}:members`,
     );
     return members;
+  }
+
+  async verifyPermission(boardId: string, userId: string) {
+    try {
+      const user = await this.collaboratorService.getCollaboratorByUserId(
+        boardId,
+        userId,
+      );
+      return user.role === 'edit';
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 }

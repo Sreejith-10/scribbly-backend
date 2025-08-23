@@ -109,6 +109,12 @@ export class WebsocketGateway
   ) {
     try {
       const boardId = await this.websocketService.getClientBoard(client.id);
+      const permission = await this.websocketService.verifyPermission(
+        boardId,
+        client.id,
+      );
+      if (!permission) throw new Error('You dont have permission to edit');
+
       if (!boardId) throw new Error('Not in any board');
 
       const processedDelta = await this.websocketService.processDelta(
@@ -120,6 +126,7 @@ export class WebsocketGateway
       client.to(boardId).emit('boardUpdate', processedDelta);
       return { status: 'success' };
     } catch (error) {
+      console.log(error);
       this.logger.error(`Update error: ${error.message}`);
       return { status: 'error', message: error.message };
     }
