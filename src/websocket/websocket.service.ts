@@ -14,7 +14,7 @@ export class WebsocketService {
     private readonly redisService: RedisService,
     private readonly boardService: BoardService,
     private readonly collaboratorService: CollaboratorService,
-  ) {}
+  ) { }
 
   async registerClient(clientId: string, userId: string): Promise<void> {
     await this.redisService.set(
@@ -163,9 +163,12 @@ export class WebsocketService {
         boardId,
         userId,
       );
-      return user.role === 'edit';
+      this.logger.log(user._id, 'user')
+      const board = await this.boardService.findBoard(boardId)
+      this.logger.log(user.role)
+      return user.role === 'edit' || board.ownerId === user.userId;
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error, 'Role error');
     }
   }
 }

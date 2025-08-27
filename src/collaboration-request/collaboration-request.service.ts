@@ -27,7 +27,7 @@ export class CollaborationRequestService {
     private readonly boardService: BoardService,
     private readonly boardMetadataService: BoardMetadataService,
     private readonly collaboratorService: CollaboratorService,
-  ) {}
+  ) { }
 
   async getCollaborationRequestsByBoardId(boardId: string): Promise<any[]> {
     // Query request document from database
@@ -219,6 +219,15 @@ export class CollaborationRequestService {
           owner: {
             password: 0,
             hashRt: 0,
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $gt: [{
+              $size: '$board'
+            }, 0]
           },
         },
       },

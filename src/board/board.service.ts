@@ -140,8 +140,6 @@ export class BoardService {
       throw new NotFoundException('board deos not exist');
     }
 
-    this.logger.log(board.title);
-
     if (board.accessMode === 'private') {
       return Promise.all([
         await this.boardRespository.deleteOne({

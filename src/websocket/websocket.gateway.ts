@@ -25,15 +25,14 @@ import { WsAuthMiddleware } from 'src/common/middlewares';
   perMessageDeflate: false,
 })
 export class WebsocketGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
-{
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   @WebSocketServer() server: Server;
   protected readonly logger = new Logger(WebsocketGateway.name);
 
   constructor(
     private readonly websocketService: WebsocketService,
     private readonly wsAuthMiddleware: WsAuthMiddleware,
-  ) {}
+  ) { }
 
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
@@ -109,10 +108,12 @@ export class WebsocketGateway
   ) {
     try {
       const boardId = await this.websocketService.getClientBoard(client.id);
+      this.logger.log(boardId, 'boardId')
       const permission = await this.websocketService.verifyPermission(
         boardId,
         client.id,
       );
+      this.logger.log(permission, 'permission')
       if (!permission) throw new Error('You dont have permission to edit');
 
       if (!boardId) throw new Error('Not in any board');

@@ -21,7 +21,7 @@ export class CollaboratorService {
     private readonly collaboratorReposiotry: CollaboratorRespository,
     @Inject(forwardRef(() => BoardService))
     private readonly boardService: BoardService,
-  ) {}
+  ) { }
 
   async getCollaborators(): Promise<Collaborator[]> {
     return this.collaboratorReposiotry.find();
@@ -122,7 +122,7 @@ export class CollaboratorService {
       },
       {
         status,
-        lastSeen: status === 'inactive' ? new Date() : null,
+        lastSeen: status === 'inactive' ? new Date() : null
       },
     );
   }
