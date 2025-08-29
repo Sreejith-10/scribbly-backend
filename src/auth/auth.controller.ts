@@ -18,6 +18,7 @@ import { JwtAuthGuard, JwtRefreshAuthGuard } from '../common/guards/auth';
 import { CurrentUser } from '../common/decorators';
 import { User } from 'src/user/schema';
 import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -26,7 +27,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
@@ -44,16 +45,16 @@ export class AuthController {
       httpOnly: true,
       expires: new Date(
         Date.now() +
-          Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
+        Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
       ),
     });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       expires: new Date(
         Date.now() +
-          Number(
-            this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
-          ),
+        Number(
+          this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
+        ),
       ),
     });
     return res.json({ message: 'logged in successfully', user });
@@ -102,13 +103,16 @@ export class AuthController {
     return { accessTokenHash, refreshTokenHash };
   }
 
+  @UseGuards(JwtRefreshAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Get('session')
-  async verifySession(@Req() req: Request) {
-    const valid = await this.authService.verifySession(
+  async verifySession(@Req() req: Request, @Res() res: Response) {
+    const { data, newAccessToken } = await this.authService.verifySession(
       req.cookies.accessToken,
       req.cookies.refreshToken,
     );
-    return valid;
+
+    res.cookie('accessToken', newAccessToken, { httpOnly: true })
+    res.json({ data })
   }
 }

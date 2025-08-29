@@ -22,7 +22,7 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto): Promise<User> {
     // checking if the user with email already exist
@@ -151,30 +151,46 @@ export class AuthService {
     return hash(token, 12);
   }
 
-  async verifySession(aT: string, rT: string) {
-    if (!aT && !rT) {
-      throw new UnauthorizedException();
+  async verifySession(accessToken: string, refreshToken: string) {
+    if (!accessToken && !refreshToken) {
+      throw new UnauthorizedException('No tokens provided');
     }
 
-    const { expired, data } = await this.verifyJwt(
-      aT,
-      this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
-    );
-
-    if (expired) {
-      const { expired, data } = await this.verifyJwt(
-        rT,
-        this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
+    if (accessToken && refreshToken) {
+      const accessResult = await this.verifyJwt(
+        accessToken,
+        this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
       );
 
-      if (expired) {
-        throw new UnauthorizedException();
+      if (!accessResult.expired) {
+        return { data: accessResult.data, newAccessToken: null };
       }
-
-      return { data };
     }
 
-    return { data };
+    if (!refreshToken) {
+      throw new UnauthorizedException('Access token expired and no refresh token provided');
+    }
+
+    const refreshResult = await this.verifyJwt(
+      refreshToken,
+      this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
+    );
+
+    if (refreshResult.expired) {
+      throw new UnauthorizedException('Both tokens are expired');
+    }
+
+    const newAccessToken = this.generateToken(
+      {
+        uid: refreshResult.data.uid,
+        email: refreshResult.data.email,
+        name: refreshResult.data.username,
+      },
+      this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
+      this.configService.get("JWT_ACCESS_TOKEN_EXPIRATION")
+    );
+
+    return { data: refreshResult.data, newAccessToken };
   }
 
   private async verifyJwt(token: string, secret: string) {
