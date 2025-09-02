@@ -1,16 +1,16 @@
-import { Server, Socket } from 'socket.io';
+import { ConsoleLogger, Logger, OnModuleInit } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
-  ConnectedSocket,
-  MessageBody,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
-import { WebsocketService } from './websocket.service';
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
 import { WsAuthMiddleware } from 'src/common/middlewares';
+import { WebsocketService } from './websocket.service';
 
 @WebSocketGateway({
   cookie: true,
@@ -35,6 +35,7 @@ export class WebsocketGateway
   ) { }
 
   async handleConnection(client: Socket) {
+    this.logger.log("Socket connection")
     this.logger.log(`Client connected: ${client.id}`);
     await this.websocketService.registerClient(client.id, client.user?.uid);
   }
@@ -74,9 +75,12 @@ export class WebsocketGateway
       );
       client.emit('boardState', boardState);
 
+      const user = await this.websocketService.getUser(client.id)
+
       client.to(paylod.boardId).emit('userJoined', {
         userId: client.id,
         timestamp: Date.now(),
+        username: user.username
       });
 
       return { status: 'success' };
@@ -108,14 +112,11 @@ export class WebsocketGateway
   ) {
     try {
       const boardId = await this.websocketService.getClientBoard(client.id);
-      this.logger.log(boardId, 'boardId')
       const permission = await this.websocketService.verifyPermission(
         boardId,
-        client.id,
+        client.user.uid,
       );
-      this.logger.log(permission, 'permission')
       if (!permission) throw new Error('You dont have permission to edit');
-
       if (!boardId) throw new Error('Not in any board');
 
       const processedDelta = await this.websocketService.processDelta(
@@ -127,7 +128,6 @@ export class WebsocketGateway
       client.to(boardId).emit('boardUpdate', processedDelta);
       return { status: 'success' };
     } catch (error) {
-      console.log(error);
       this.logger.error(`Update error: ${error.message}`);
       return { status: 'error', message: error.message };
     }
@@ -135,8 +135,9 @@ export class WebsocketGateway
 
   @SubscribeMessage('activeUsers')
   async activeUsers(@ConnectedSocket() client: Socket) {
+    const board = await this.websocketService.getClientBoard(client.id)
     const members = await this.websocketService.activeUsers(client.id);
-    client.emit('activeUsers', members);
+    this.server.to(board).emit('activeUsers', members);
   }
 
   @SubscribeMessage('boardChange')
@@ -157,6 +158,6 @@ export class WebsocketGateway
 
     client
       .to(board)
-      .emit('mouseMove', { x: paylod.x, y: paylod.y, userId: client.id });
+      .emit('mouseMove', { x: paylod.x, y: paylod.y, clientId: client.id, userId: client.user.uid });
   }
 }

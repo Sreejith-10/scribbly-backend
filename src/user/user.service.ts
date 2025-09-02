@@ -2,15 +2,23 @@ import { Injectable, NotFoundException, UseInterceptors } from '@nestjs/common';
 import { CatchErrorsInterceptor } from 'src/common/interceptor';
 import { UsersRepository } from './user.respository';
 import { User } from './schema';
+import { Types } from 'mongoose';
 
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class UserService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(private readonly usersRepository: UsersRepository) { }
 
   async getUser(email: string): Promise<User> {
     // Query for user from database
     return this.usersRepository.findOne({ email });
+  }
+
+  async findUserById(userId: string): Promise<User> {
+    return this.usersRepository.findOne(
+      { _id: new Types.ObjectId(userId) },
+      { _id: true, email: true, username: true, avatarUrl: true },
+    );
   }
 
   async sanitizedUser(email: string): Promise<User> {
