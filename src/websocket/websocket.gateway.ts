@@ -46,7 +46,8 @@ export class WebsocketGateway
     if (boardId) {
       await this.websocketService.leaveBoard(client.id, client.user.uid);
       client.leave(boardId);
-      client.to(boardId).emit('userLeft', { userId: client.id });
+      client.to(boardId).emit('userLeft', { clientId: client.id, userId: client.user.uid, username: client.user.name });
+
     }
     await this.websocketService.unregisterClient(client.id, client.user.uid);
   }
@@ -95,8 +96,8 @@ export class WebsocketGateway
     const boardId = await this.websocketService.getClientBoard(client.id);
     if (boardId) {
       await this.websocketService.leaveBoard(client.id, client.user.uid);
+      client.to(boardId).emit('userLeft', { clientId: client.id, userId: client.user.uid });
       client.leave(boardId);
-      client.to(boardId).emit('userLeft', { userId: client.id });
     }
   }
 
@@ -105,7 +106,7 @@ export class WebsocketGateway
     @ConnectedSocket() client: Socket,
     @MessageBody()
     payload: {
-      operation: 'create' | 'update' | 'delete' | 'move';
+      operation: 'create' | 'update' | 'delete';
       shapeId: string;
       data?: any;
     },

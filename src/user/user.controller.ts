@@ -16,7 +16,7 @@ import { CurrentUserType } from 'src/utils/types';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @HttpCode(HttpStatus.OK)
   @Get('/u')

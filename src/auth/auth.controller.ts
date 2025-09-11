@@ -81,13 +81,28 @@ export class AuthController {
     @CurrentUser() user: Omit<User, 'password' | 'hashRt'>,
     @Res() res: Response,
   ) {
-    const accessToken = await this.authService.refresh(
+    const { generateAT, generateRT } = await this.authService.refresh(
       user.email,
       req.cookies.refreshToken,
     );
 
-    res.cookie('accessToken', accessToken, { httpOnly: true });
-    return res.json({ message: 'user refreshed', accessToken });
+    res.cookie('accessToken', generateAT, {
+      httpOnly: true,
+      expires: new Date(
+        Date.now() +
+        Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
+      ),
+    });
+    res.cookie('refreshToken', generateRT, {
+      httpOnly: true,
+      expires: new Date(
+        Date.now() +
+        Number(
+          this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
+        ),
+      ),
+    });
+    return res.json({ message: 'user refreshed' });
   }
 
   // @UseGuards(JwtAuthGuard)
@@ -101,18 +116,5 @@ export class AuthController {
     const refreshTokenHash = await this.authService.hashToken(refreshToken);
 
     return { accessTokenHash, refreshTokenHash };
-  }
-
-  @UseGuards(JwtRefreshAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  @Get('session')
-  async verifySession(@Req() req: Request, @Res() res: Response) {
-    const { data, newAccessToken } = await this.authService.verifySession(
-      req.cookies.accessToken,
-      req.cookies.refreshToken,
-    );
-
-    res.cookie('accessToken', newAccessToken, { httpOnly: true })
-    res.json({ data })
   }
 }

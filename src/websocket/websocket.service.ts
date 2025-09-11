@@ -103,7 +103,7 @@ export class WebsocketService {
     boardId: string,
     clientId: string,
     delta: {
-      operation: 'create' | 'update' | 'delete' | 'move';
+      operation: 'create' | 'update' | 'delete';
       data?: any;
     },
   ): Promise<any> {

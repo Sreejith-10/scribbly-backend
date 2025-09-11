@@ -120,8 +120,18 @@ export class AuthService {
       this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
       this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION'),
     );
+    const generateRT = this.generateToken(
+      {
+        uid: user._id,
+        email: user.email,
+        name: user.username,
+      },
+      this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+      this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
+    );
+    await this.userService.userHashToken(user.email, await this.hashToken(generateRT))
 
-    return generateAT;
+    return { generateAT, generateRT };
   }
 
   async verifyUser(email: string, password: string) {
@@ -149,48 +159,6 @@ export class AuthService {
 
   async hashToken(token: string): Promise<string> {
     return hash(token, 12);
-  }
-
-  async verifySession(accessToken: string, refreshToken: string) {
-    if (!accessToken && !refreshToken) {
-      throw new UnauthorizedException('No tokens provided');
-    }
-
-    if (accessToken && refreshToken) {
-      const accessResult = await this.verifyJwt(
-        accessToken,
-        this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
-      );
-
-      if (!accessResult.expired) {
-        return { data: accessResult.data, newAccessToken: null };
-      }
-    }
-
-    if (!refreshToken) {
-      throw new UnauthorizedException('Access token expired and no refresh token provided');
-    }
-
-    const refreshResult = await this.verifyJwt(
-      refreshToken,
-      this.configService.get('JWT_REFRESH_TOKEN_SECRET'),
-    );
-
-    if (refreshResult.expired) {
-      throw new UnauthorizedException('Both tokens are expired');
-    }
-
-    const newAccessToken = this.generateToken(
-      {
-        uid: refreshResult.data.uid,
-        email: refreshResult.data.email,
-        name: refreshResult.data.username,
-      },
-      this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
-      this.configService.get("JWT_ACCESS_TOKEN_EXPIRATION")
-    );
-
-    return { data: refreshResult.data, newAccessToken };
   }
 
   private async verifyJwt(token: string, secret: string) {
