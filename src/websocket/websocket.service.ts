@@ -187,6 +187,29 @@ export class WebsocketService {
   }
 
   async getUser(clientId: string): Promise<{ userId: string, status: string, username: string, clientId: string }> {
-    return this.redisService.get(`${this.CLIENT_PREFIX}${clientId}`)
+    return this.redisService.get(`${this.CLIENT_PREFIX}${clientId}`);
+  }
+
+  async lockShape(boardId: string, shapeId: string, userId: string) {
+    const lockKey = `lock:${boardId}:${shapeId}`;
+
+    const lock = await this.redisService.get(lockKey);
+    if (lock) {
+      return false
+    } else {
+      await this.redisService.set(lockKey, userId, 60000)
+      return true
+    }
+  }
+
+  async unlockShape(boardId: string, shapeId: string) {
+    const lockKey = `lock:${boardId}:${shapeId}`;
+    await this.redisService.del(lockKey)
+  }
+
+  async isShapeLocked(boardId: string, shapeId: string) {
+    const lockKey = `lock:${boardId}:${shapeId}`
+    const lock = await this.redisService.get(lockKey)
+    return lock
   }
 }

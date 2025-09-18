@@ -161,4 +161,45 @@ export class WebsocketGateway
       .to(board)
       .emit('mouseMove', { x: paylod.x, y: paylod.y, clientId: client.id, userId: client.user.uid });
   }
+
+  @SubscribeMessage('selectShape')
+  async selectShape(@ConnectedSocket() client: Socket, @MessageBody() payload: { shapeId: string }) {
+    const board = await this.websocketService.getClientBoard(client.id)
+    const lock = await this.websocketService.isShapeLocked(board, payload.shapeId)
+
+    this.logger.log(lock, client.user.uid)
+
+    if (lock) {
+      if (client.user.uid === lock) {
+        await this.websocketService.unlockShape(board, payload.shapeId)
+        await this.websocketService.lockShape(board, payload.shapeId, client.user.uid)
+        this.logger.log('you unlocked & locked a shape')
+      } else {
+        this.logger.error('shape is locked')
+      }
+    } else {
+      await this.websocketService.lockShape(board, payload.shapeId, client.user.uid)
+      this.logger.log('you locked the shape')
+    }
+
+    client.to(board).emit('lockedShapes', { shapeId: payload.shapeId, lockUser: client.user.uid })
+  }
+
+  @SubscribeMessage('lockShape')
+  async lockShape(@ConnectedSocket() client: Socket, @MessageBody() payload: { shapeId: string }) {
+    const board = await this.websocketService.getClientBoard(client.id)
+    const lock = await this.websocketService.lockShape(board, payload.shapeId, client.user.uid)
+    if (!lock) {
+      await this.websocketService.unlockShape(board, payload.shapeId)
+    }
+
+    return { message: 'shape locked' }
+  }
+
+  @SubscribeMessage('unlockShape')
+  async unlockShape(@ConnectedSocket() client: Socket, @MessageBody() payload: { shapeId: string }) {
+    const board = await this.websocketService.getClientBoard(client.id)
+    await this.websocketService.unlockShape(board, payload.shapeId)
+    client.to(board).emit('unlockShape', { shapeId: payload.shapeId })
+  }
 }
