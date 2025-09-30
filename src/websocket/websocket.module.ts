@@ -9,7 +9,13 @@ import { CollaboratorModule } from 'src/collaborator';
 import { UserModule } from 'src/user';
 
 @Module({
-  imports: [RedisModule, BoardModule, JwtModule, CollaboratorModule, UserModule],
+  imports: [
+    RedisModule,
+    BoardModule,
+    JwtModule,
+    CollaboratorModule,
+    UserModule,
+  ],
   providers: [WebsocketGateway, WebsocketService, WsAuthMiddleware],
 })
-export class WebsocketModule { }
+export class WebsocketModule {}

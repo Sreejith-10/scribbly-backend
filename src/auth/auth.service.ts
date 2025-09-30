@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  RequestTimeoutException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { LoginDto, RegisterDto } from './dto';
@@ -22,7 +23,7 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   async register(dto: RegisterDto): Promise<User> {
     // checking if the user with email already exist
@@ -129,7 +130,10 @@ export class AuthService {
       this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
       this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
     );
-    await this.userService.userHashToken(user.email, await this.hashToken(generateRT))
+    await this.userService.userHashToken(
+      user.email,
+      await this.hashToken(generateRT),
+    );
 
     return { generateAT, generateRT };
   }
@@ -178,5 +182,32 @@ export class AuthService {
     });
 
     return { expired, data };
+  }
+
+  async forgotPassword(email: string): Promise<string> {
+    const user = await this.userService.getUser(email);
+    if (!user.email) {
+      throw new NotFoundException('email does not exist');
+    }
+
+    const resetPasswordToken = this.generateToken(
+      { uid: user._id, email: user.email },
+      'jwt',
+      5,
+    );
+
+    // Send reset link to email
+
+    return resetPasswordToken;
+  }
+
+  async resetPassword(resetPasswordToken: string, newPassword: string) {
+    const { data, expired } = await this.verifyJwt(resetPasswordToken, 'jwt');
+    if (expired || !data) {
+      throw new RequestTimeoutException('link expired');
+    }
+
+    const hash = await bcrypt.hash(newPassword, 12);
+    return this.userService.updateUserPassword(data.email, hash);
   }
 }

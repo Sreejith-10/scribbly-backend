@@ -40,6 +40,10 @@ export class RedisService {
     return value ? JSON.parse(value) : null;
   }
 
+  async keys(pattern: string) {
+    return this.redisClient.keys(pattern);
+  }
+
   async del(key: string): Promise<void> {
     await this.redisClient.del(key);
   }

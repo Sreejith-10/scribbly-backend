@@ -7,7 +7,7 @@ import { Types } from 'mongoose';
 @UseInterceptors(CatchErrorsInterceptor)
 @Injectable()
 export class UserService {
-  constructor(private readonly usersRepository: UsersRepository) { }
+  constructor(private readonly usersRepository: UsersRepository) {}
 
   async getUser(email: string): Promise<User> {
     // Query for user from database
@@ -58,6 +58,10 @@ export class UserService {
     );
 
     return updatedUser as User;
+  }
+
+  async updateUserPassword(email: string, password: string): Promise<User> {
+    return this.usersRepository.findOneAndUpdate({ email }, { password });
   }
 
   async userHashToken(email: string, hashRt: string): Promise<User> {

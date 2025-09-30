@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  Param,
   Patch,
   Post,
   Req,
@@ -27,7 +28,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
@@ -45,16 +46,16 @@ export class AuthController {
       httpOnly: true,
       expires: new Date(
         Date.now() +
-        Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
+          Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
       ),
     });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       expires: new Date(
         Date.now() +
-        Number(
-          this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
-        ),
+          Number(
+            this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
+          ),
       ),
     });
     return res.json({ message: 'logged in successfully', user });
@@ -90,16 +91,16 @@ export class AuthController {
       httpOnly: true,
       expires: new Date(
         Date.now() +
-        Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
+          Number(this.configService.get<number>('JWT_ACCESS_TOKEN_EXPIRATION')),
       ),
     });
     res.cookie('refreshToken', generateRT, {
       httpOnly: true,
       expires: new Date(
         Date.now() +
-        Number(
-          this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
-        ),
+          Number(
+            this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRATION'),
+          ),
       ),
     });
     return res.json({ message: 'user refreshed' });
@@ -116,5 +117,20 @@ export class AuthController {
     const refreshTokenHash = await this.authService.hashToken(refreshToken);
 
     return { accessTokenHash, refreshTokenHash };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('forgot-password')
+  async forgotPassword(@Body() { email }: { email: string }) {
+    return this.authService.forgotPassword(email);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Patch('reset-password/:token')
+  async resetPassword(
+    @Param('token') token: string,
+    @Body() { password }: { password: string },
+  ) {
+    return this.authService.resetPassword(token, password);
   }
 }

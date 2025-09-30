@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { lcov } from 'node:test/reporters';
 import { BoardService } from 'src/board';
 import { Board } from 'src/board/schema';
 import { CollaboratorService } from 'src/collaborator';
@@ -10,20 +11,21 @@ export class WebsocketService {
   private readonly logger = new Logger(WebsocketService.name);
   private readonly BOARD_PREFIX = 'board:';
   private readonly CLIENT_PREFIX = 'client:';
+  private readonly SHAPE_PREFIX = 'shape:';
 
   constructor(
     private readonly redisService: RedisService,
     private readonly boardService: BoardService,
     private readonly collaboratorService: CollaboratorService,
-    private readonly userService: UserService
-  ) { }
+    private readonly userService: UserService,
+  ) {}
 
   async registerClient(clientId: string, userId: string): Promise<void> {
-    const user = await this.userService.findUserById(userId)
+    const user = await this.userService.findUserById(userId);
     await this.redisService.set(
       `${this.CLIENT_PREFIX}${clientId}`,
       { userId, status: 'connected', username: user.username, clientId },
-      86400, // 24h TTL
+      43200, // 24h TTL
     );
   }
 
@@ -46,7 +48,6 @@ export class WebsocketService {
     }
 
     const board = await this.boardService.findBoard(boardId);
-    const user = await this.userService.findUserById(userId)
     if (!board) {
       this.logger.error('Board not found');
       throw new Error('Board not found');
@@ -161,55 +162,101 @@ export class WebsocketService {
 
     const members = await Promise.all(
       clientIds.map(async (client, index) => {
-        const clientData = await this.redisService.get<{ userId: string }>(`${this.CLIENT_PREFIX}${client}`)
-        return { ...clientData, clientId: clientIds[index] }
-      })
-    )
+        const clientData = await this.redisService.get<{ userId: string }>(
+          `${this.CLIENT_PREFIX}${client}`,
+        );
+        return { ...clientData, clientId: clientIds[index] };
+      }),
+    );
 
-    return [...new Set(members.map((member) => JSON.stringify(member)))].map((item) => JSON.parse(item))
+    return [...new Set(members.map((member) => JSON.stringify(member)))].map(
+      (item) => JSON.parse(item),
+    );
   }
 
   async verifyPermission(boardId: string, userId: string) {
     try {
-      const board = await this.boardService.findBoard(boardId)
+      const board = await this.boardService.findBoard(boardId);
       if (board.ownerId.toString() === userId) {
-        return true
+        return true;
       }
       const user = await this.collaboratorService.getCollaboratorByUserId(
         boardId,
         userId,
       );
 
-      return user.role === 'edit'
+      return user.role === 'edit';
     } catch (error) {
       this.logger.error(error, 'Role error');
     }
   }
 
-  async getUser(clientId: string): Promise<{ userId: string, status: string, username: string, clientId: string }> {
+  async getUser(clientId: string): Promise<{
+    userId: string;
+    status: string;
+    username: string;
+    clientId: string;
+  }> {
     return this.redisService.get(`${this.CLIENT_PREFIX}${clientId}`);
   }
 
   async lockShape(boardId: string, shapeId: string, userId: string) {
-    const lockKey = `lock:${boardId}:${shapeId}`;
-
+    const lockKey = `lock:${this.BOARD_PREFIX}${boardId}:${this.SHAPE_PREFIX}${shapeId}`;
+    console.log('lockkye', lockKey);
     const lock = await this.redisService.get(lockKey);
-    if (lock) {
-      return false
+    console.log('lock', lock);
+    if (lock && lock === userId) {
+      await this.redisService.del(lockKey);
+      return this.redisService.set(lockKey, userId, 600000);
+    } else if (!lock) {
+      return this.redisService.set(lockKey, userId, 600000);
     } else {
-      await this.redisService.set(lockKey, userId, 60000)
-      return true
+      return false;
     }
   }
 
   async unlockShape(boardId: string, shapeId: string) {
-    const lockKey = `lock:${boardId}:${shapeId}`;
-    await this.redisService.del(lockKey)
+    const lockKey = `lock:${this.BOARD_PREFIX}${boardId}:${this.SHAPE_PREFIX}${shapeId}`;
+    return this.redisService.del(lockKey);
   }
 
   async isShapeLocked(boardId: string, shapeId: string) {
-    const lockKey = `lock:${boardId}:${shapeId}`
-    const lock = await this.redisService.get(lockKey)
-    return lock
+    const lockKey = `lock:${this.BOARD_PREFIX}${boardId}:${this.SHAPE_PREFIX}${shapeId}`;
+    const lock = await this.redisService.get(lockKey);
+    return lock;
+  }
+
+  async lockedShapes(boardId: string) {
+    const lockedUserShapes = {};
+    const lock = `lock:${this.BOARD_PREFIX}${boardId}:${this.SHAPE_PREFIX}*`;
+
+    const keys = await this.redisService.keys(lock);
+
+    if (keys.length < 0) {
+      return lockedUserShapes;
+    }
+
+    for (const key of keys) {
+      const uid = await this.redisService.get<string>(key);
+      const dk = key.match(/shape:(.*)/)[1];
+      const user = await this.userService.findUserById(uid);
+      lockedUserShapes[dk] = { uid: user._id, username: user.username };
+    }
+
+    return lockedUserShapes;
+  }
+
+  async forcedShapeUnlock(boardId: string, userId: string) {
+    const keys = await this.redisService.keys(
+      `lock:${this.BOARD_PREFIX}${boardId}:*`,
+    );
+    for (const key of keys) {
+      const u = await this.redisService.get(key);
+      if (u === userId) {
+        await this.redisService.del(key);
+        break;
+      }
+    }
+    return;
   }
 }
