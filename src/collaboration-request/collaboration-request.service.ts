@@ -238,4 +238,14 @@ export class CollaborationRequestService {
 
     return requests;
   }
+
+  async removeCollaborationRequest(
+    boardId: string,
+    userId: string,
+  ): Promise<void> {
+    return this.collaborationRequestRespository.deleteOne({
+      boardId: new Types.ObjectId(boardId),
+      userId: new Types.ObjectId(userId),
+    });
+  }
 }

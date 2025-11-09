@@ -109,4 +109,20 @@ export class CollaborationRequestController {
       request,
     };
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Delete(':boardId/:userId')
+  async removeCollaborationRequest(
+    @Param('boardId') boardId: string,
+    @Param('userId') userId: string,
+  ) {
+    await this.collaborationRequestService.removeCollaborationRequest(
+      boardId,
+      userId,
+    );
+
+    return {
+      message: 'Request removed',
+    };
+  }
 }

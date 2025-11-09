@@ -16,8 +16,7 @@ import { WebsocketService } from './websocket.service';
   cookie: true,
   cors: {
     credentials: true,
-    origin: '*',
-    // origin: process.env.CLIENT,
+    origin: process.env.CLIENT,
   },
   pingInterval: 30000,
   pingTimeout: 10000,
@@ -48,13 +47,11 @@ export class WebsocketGateway
       await this.websocketService.leaveBoard(client.id, client.user.uid);
       await this.websocketService.forcedShapeUnlock(boardId, client.user.uid);
       client.leave(boardId);
-      client
-        .to(boardId)
-        .emit('userLeft', {
-          clientId: client.id,
-          userId: client.user.uid,
-          username: client.user.name,
-        });
+      client.to(boardId).emit('userLeft', {
+        clientId: client.id,
+        userId: client.user.uid,
+        username: client.user.name,
+      });
     }
     await this.websocketService.unregisterClient(client.id, client.user.uid);
   }
@@ -91,7 +88,8 @@ export class WebsocketGateway
       const user = await this.websocketService.getUser(client.id);
 
       client.to(paylod.boardId).emit('userJoined', {
-        userId: client.id,
+        clientId: client.id,
+        userId: client.user.uid,
         timestamp: Date.now(),
         username: user.username,
       });
@@ -171,50 +169,12 @@ export class WebsocketGateway
   ) {
     const board = await this.websocketService.getClientBoard(client.id);
 
-    client
-      .to(board)
-      .emit('mouseMove', {
-        x: paylod.x,
-        y: paylod.y,
-        clientId: client.id,
-        userId: client.user.uid,
-      });
-  }
-
-  @SubscribeMessage('selectShape')
-  async selectShape(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { shapeId: string },
-  ) {
-    const board = await this.websocketService.getClientBoard(client.id);
-    const lock = await this.websocketService.isShapeLocked(
-      board,
-      payload.shapeId,
-    );
-
-    if (lock) {
-      if (client.user.uid === lock) {
-        await this.websocketService.unlockShape(board, payload.shapeId);
-        await this.websocketService.lockShape(
-          board,
-          payload.shapeId,
-          client.user.uid,
-        );
-      }
-    } else {
-      await this.websocketService.lockShape(
-        board,
-        payload.shapeId,
-        client.user.uid,
-      );
-    }
-
-    client
-      .to(board)
-      .emit('lockedNewShape', {
-        shapeId: payload.shapeId,
-        lockUser: { uid: client.user.uid, username: client.user.name },
-      });
+    client.to(board).emit('mouseMove', {
+      x: paylod.x,
+      y: paylod.y,
+      clientId: client.id,
+      userId: client.user.uid,
+    });
   }
 
   @SubscribeMessage('lockShape')
@@ -228,11 +188,15 @@ export class WebsocketGateway
       payload.shapeId,
       client.user.uid,
     );
-    if (!lock) {
-      await this.websocketService.unlockShape(board, payload.shapeId);
-    }
 
-    return { message: 'shape locked' };
+    if (lock) {
+      client.to(board).emit('lockedNewShape', {
+        shapeId: payload.shapeId,
+        lockUser: { uid: client.user.uid, username: client.user.name },
+      });
+    } else {
+      client.emit('error', { message: 'shape is alredy locked' });
+    }
   }
 
   @SubscribeMessage('unlockShape')
@@ -243,5 +207,16 @@ export class WebsocketGateway
     const board = await this.websocketService.getClientBoard(client.id);
     await this.websocketService.unlockShape(board, payload.shapeId);
     client.to(board).emit('unlockShape', { shapeId: payload.shapeId });
+  }
+
+  @SubscribeMessage('resetBoard')
+  async resetBoard(@ConnectedSocket() client: Socket) {
+    const board = await this.websocketService.getClientBoard(client.id);
+    const resetState = await this.websocketService.resetBoard(
+      board,
+      client.user.uid,
+    );
+
+    client.to(board).emit('resetBoardUpdate', resetState);
   }
 }

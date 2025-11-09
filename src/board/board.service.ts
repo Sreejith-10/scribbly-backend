@@ -381,4 +381,12 @@ export class BoardService {
         return { ...delta, data: delta.previousData };
     }
   }
+
+  async isOwner(boardId: string, userId: string): Promise<boolean> {
+    const board = await this.boardRespository.findOne({
+      _id: new Types.ObjectId(boardId),
+    });
+
+    return board.ownerId.toString() === userId;
+  }
 }

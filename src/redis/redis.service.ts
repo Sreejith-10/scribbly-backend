@@ -37,7 +37,8 @@ export class RedisService {
 
   async get<T>(key: string): Promise<T | null> {
     const value = await this.redisClient.get(key);
-    return value ? JSON.parse(value) : null;
+    const parsed = await JSON.parse(value);
+    return parsed ?? null;
   }
 
   async keys(pattern: string) {
